@@ -9,3 +9,7 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .hg/
+.cljs_node_repl/
+.idea/
+resources/out/
+fast-map.iml

@@ -92,7 +92,34 @@
           (aset new-arr (inc (* 2 idx)) val)
           (array-copy arr (* 2 idx) new-arr (* 2 (inc idx)) (* 2 (- n idx)))
           (set! (.-added changed?) true)
-          (BitmapIndexedNode. aedit (bit-or datamap bit) nodemap new-arr))))))
+          (BitmapIndexedNode. aedit (bit-or datamap bit) nodemap new-arr)))))
+
+  (inode-lookup [inode shift hash key not-found]
+    (let [bit (bitpos hash shift)]
+      (cond
+        (not (zero? (bit-and datamap bit)))
+        (let [idx (bitmap-indexed-node-index datamap bit)
+              k (aget arr (* 2 idx))]
+          (if (=  k key)
+            (aget arr (inc (* 2 idx)))
+            not-found))
+        (not (zero? (bit-and nodemap bit)))
+        (.inode-lookup (node-at arr nodemap bit) (+ shift 5) hash key not-found)
+        :else
+        not-found)))
+  (inode-find [inode shift hash key not-found]
+    (let [bit (bitpos hash shift)]
+      (cond
+        (not (zero? (bit-and datamap bit)))
+        (let [idx (bitmap-indexed-node-index datamap bit)
+              k (aget arr (* 2 idx))]
+          (if (= k key)
+            [k (aget arr (inc (* 2 idx)))]
+            not-found))
+        (not (zero? (bit-and nodemap bit)))
+        (.inode-lookup (node-at arr nodemap bit) (+ shift 5) hash key not-found)
+        :else
+        not-found))))
 
 (set! (.-EMPTY BitmapIndexedNode) (BitmapIndexedNode. nil 0 0 (make-array 0)))
 
@@ -114,7 +141,19 @@
           (HashCollisionNode. nil collision-hash (inc cnt) new-arr))
         (if (= (aget arr idx) val)
           inode
-          (HashCollisionNode. nil collision-hash cnt (clone-and-set arr (inc idx) val)))))))
+          (HashCollisionNode. nil collision-hash cnt (clone-and-set arr (inc idx) val))))))
+
+  (inode-lookup [inode shift hash key not-found]
+    (let [idx (hash-collision-node-find-index arr cnt key)]
+      (cond (< idx 0)              not-found
+            (key-test key (aget arr idx)) (aget arr (inc idx))
+            :else                  not-found)))
+
+  (inode-find [inode shift hash key not-found]
+    (let [idx (hash-collision-node-find-index arr cnt key)]
+      (cond (< idx 0)              not-found
+            (key-test key (aget arr idx)) [(aget arr idx) (aget arr (inc idx))]
+            :else                  not-found))))
 
 (defn- create-node [edit shift key1 val1 key2hash key2 val2]
   (let [key1hash (hash key1)]
@@ -290,9 +329,11 @@
     (print-map coll pr-writer writer opts)))
 
 (comment
-    (let [em (.-EMPTY PersistentHashMap)
-          hm1 (loop [m em i 0]
-                (if (< i 50)
-                  (recur (assoc m (str "key" i) i) (inc i))
-                  m))]
-      (println hm1)))
+  (let [em (.-EMPTY PersistentHashMap)
+        hm1 (loop [m em i 0]
+              (if (< i 50)
+                (recur (assoc m (str "key" i) i) (inc i))
+                m))]
+    (println hm1)
+    [(= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range 50))))
+     (= (keys hm1) (map (fn [[k v]] k) hm1))]))

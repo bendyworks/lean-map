@@ -16,6 +16,8 @@ A ClojreScript implementation of Lean Hash Array Mapped Tries. See (reference)[h
 
 ## Thanks
 
+- (Bendyworks)[https://bendyworks.com/] for letting me work on this
+
 - Michael J. Steindorfer and Jurgen J. Vinju for the (Lean HAMT Paper)[http://michael.steindorfer.name/publications/oopsla15.pdf]
 
 - Use The Source for their reference (implementation)[http://usethesource.io/projects/capsule/]

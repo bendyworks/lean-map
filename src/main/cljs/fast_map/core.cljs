@@ -1,8 +1,13 @@
 (ns cljs.fast-map.core
   (:refer-clojure :exclude [Box ->Box BitmapIndexedNode ->BitmapIndexedNode
                             HashCollisionNode ->HashCollisionNode
+                            PersistentHashMap ->PersistentHashMap
+                            TransientHashMap ->TransientHashMap
+                            NodeSeq ->NodeSeq
                             create-inode-seq create-array-node-seq create-node
                             mask bitmap-indexed-node-index bitpos]))
+
+(declare NodeSeq TransientHashMap PersistentHashMap)
 
 (deftype Box [^:mutable added ^:mutable modified])
 
@@ -54,6 +59,9 @@
       (aset dst idx-new node)
       (array-copy arr (+ idx-new 2) dst (inc idx-new) (- (alength arr) idx-new 2))
       (BitmapIndexedNode. e (bit-or datamap bit) (bit-xor nodemap bit) dst)))
+
+  (inode-seq [inode]
+    (NodeSeq. nil arr (* 2 (bit-count datamap)) (bit-count nodemap) 0 nil nil))
 
   (inode-assoc [inode aedit shift hash key val changed?]
     (let [bit (bitpos hash shift)]
@@ -117,19 +125,174 @@
             (.inode-assoc edit shift key1hash key1 val1 changed?)
             (.inode-assoc edit shift key2hash key2 val2 changed?))))))
 
+(deftype PersistentHashMap [meta cnt root ^:mutable __hash]
+  Object
+  (toString [coll]
+    (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ICloneable
+  (-clone [_] (PersistentHashMap. meta cnt root __hash))
+
+  IWithMeta
+  (-with-meta [coll meta] (PersistentHashMap. meta cnt root  __hash))
+
+  IMeta
+  (-meta [coll] meta)
+
+  IEmptyableCollection
+  (-empty [coll] (-with-meta (.-EMPTY PersistentHashMap) meta))
+
+  IEquiv
+  (-equiv [coll other] (equiv-map coll other))
+
+  IHash
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
+
+  ISeqable
+  (-seq [coll]
+    (when (pos? cnt)
+      (.inode-seq root)))
+
+  ICounted
+  (-count [coll] cnt)
+
+  IAssociative
+  (-assoc [coll k v]
+    (let [changed? (Box. false false)
+          new-root    (-> (if (nil? root)
+                            (.-EMPTY BitmapIndexedNode)
+                            root)
+                          (.inode-assoc nil 0 (hash k) k v changed?))]
+      (if (identical? new-root root)
+        coll
+        (PersistentHashMap. meta (if ^boolean (.-added changed?) (inc cnt) cnt) new-root  nil))))
+
+  (-contains-key? [coll k]
+    #_(cond (nil? k)    has-nil?
+          (nil? root) false
+          :else       (not (identical? (.inode-lookup root 0 (hash k) k lookup-sentinel)
+                                       lookup-sentinel))))
+
+
+
+  IEditableCollection
+  (-as-transient [coll]
+    (TransientHashMap. (js-obj) root cnt)))
+
+(set! (.-EMPTY PersistentHashMap) (PersistentHashMap. nil 0 nil empty-unordered-hash))
+
+(deftype TransientHashMap [^:mutable ^boolean edit
+                           ^:mutable root
+                           ^:mutable count]
+  Object
+  #_(conj! [tcoll o]
+    (if edit
+      (if (satisfies? IMapEntry o)
+        (.assoc! tcoll (key o) (val o))
+        (loop [es (seq o) tcoll tcoll]
+          (if-let [e (first es)]
+            (recur (next es)
+                   (.assoc! tcoll (key e) (val e)))
+            tcoll)))
+      (throw (js/Error. "conj! after persistent"))))
+
+  (assoc! [tcoll k v]
+    (if edit
+      (let [changed? (Box. false false)
+            node        (-> (if (nil? root)
+                              (.-EMPTY BitmapIndexedNode)
+                              root)
+                            (.inode-assoc nil edit 0 (hash k) k v changed?))]
+        (if (identical? node root)
+          nil
+          (set! root node))
+        (if ^boolean (.-added changed?)
+          (set! count (inc count)))
+        tcoll)
+      (throw (js/Error. "assoc! after persistent!"))))
+
+  (persistent! [tcoll]
+    (if edit
+      (do (set! edit nil)
+          (PersistentHashMap. nil count root nil))
+      (throw (js/Error. "persistent! called twice"))))
+
+  ICounted
+  (-count [coll]
+    (if edit
+      count
+      (throw (js/Error. "count after persistent!"))))
+
+  ITransientCollection
+  (-conj! [tcoll val] #_(.conj! tcoll val))
+
+  (-persistent! [tcoll] (.persistent! tcoll))
+
+  ITransientAssociative
+  (-assoc! [tcoll key val] (.assoc! tcoll key val)))
+
+(deftype NodeSeq [meta nodes dlen nlen i s ^:mutable __hash]
+  Object
+  (toString [coll]
+    (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  IMeta
+  (-meta [coll] meta)
+
+  IWithMeta
+  (-with-meta [coll meta] (NodeSeq. meta nodes dlen nlen i s __hash))
+
+  ICollection
+  (-conj [coll o] (cons o coll))
+
+  IEmptyableCollection
+  (-empty [coll] (with-meta (.-EMPTY List) meta))
+
+  ISequential
+  ISeq
+  (-first [coll]
+    (if (nil? s)
+      [(aget nodes i) (aget nodes (inc i))]
+      (first s)))
+
+  (-rest [coll]
+    (if (nil? s)
+      (let [len (alength nodes)]
+        (cond
+          (< i dlen)
+          (NodeSeq. meta nodes dlen nlen (+ i 2) nil nil)
+          (and (== i dlen) (not (zero? nlen)))
+          (NodeSeq. meta nodes dlen nlen len (aget nodes len) nil)
+          :else
+          (NodeSeq. meta nodes dlen nlen (dec i) (aget nodes (dec i)) nil)))
+      (NodeSeq. meta nodes dlen nlen i (next s) nil)))
+
+  ISeqable
+  (-seq [this] this)
+
+  IEquiv
+  (-equiv [coll other] (equiv-sequential coll other))
+
+  IHash
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
+
+  IReduce
+  (-reduce [coll f] (seq-reduce f coll))
+  (-reduce [coll f start] (seq-reduce f start coll)))
+
+(extend-protocol IPrintWithWriter
+  PersistentHashMap
+  (-pr-writer [coll writer opts]
+    (print-map coll pr-writer writer opts)))
+
 (comment
-    (let [em (.-EMPTY BitmapIndexedNode)
-          sent (js-obj)]
-      (let [bn1 (.inode-assoc em nil 0 (hash :foo1) :foo1 :bar  (Box. false false))
-            bn2 (.inode-assoc bn1 nil 0 (hash :foo1) :foo1 :not-bar  (Box. false false))
-            bn3 (.inode-assoc bn1 nil 0 (hash :foo2) :foo2 :bar2  (Box. false false))
-            nn1 (.inode-assoc bn3 nil 0 (hash :foo2) :foo3 :split-bar  (Box. false false))]
-        (println "Pesistent Assoc")
-        (println [(.-arr em) (.-arr bn1) (.-arr bn2) (.-arr bn3) (.-arr nn1)
-                  (.-arr (aget (.-arr nn1) 2))]))
-      (let [bn1 (.inode-assoc em nil 0 (hash :foo1) :foo1 :bar  (Box. false false))
-            tbn1 (.inode-assoc bn1 sent 0 (hash :foo1) :foo1 :my-bar  (Box. false false))
-            tbn2 (.inode-assoc tbn1 sent 0 (hash :foo1) :foo1 :another-bar  (Box. false false))
-            tbn3 (.inode-assoc tbn2 sent 0 (hash :foo1) :foo1 :changed  (Box. false false))]
-        (println "Transient Assoc")
-        (println [(.-arr em) (.-arr bn1) (.-arr tbn1) (.-arr tbn2) (.-arr tbn3)])) ))
+    (let [em (.-EMPTY PersistentHashMap)
+          hm1 (loop [m em i 0]
+                (if (< i 50)
+                  (recur (assoc m (str "key" i) i) (inc i))
+                  m))]
+      (println hm1)))

@@ -203,6 +203,15 @@
   IHash
   (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
+  ILookup
+  (-lookup [coll k]
+    (-lookup coll k nil))
+
+  (-lookup [coll k not-found]
+    (if (nil? root)
+      not-found (.inode-lookup root 0 (hash k) k not-found)))
+
+
   ISeqable
   (-seq [coll]
     (when (pos? cnt)

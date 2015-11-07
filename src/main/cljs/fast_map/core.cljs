@@ -7,7 +7,7 @@
                             create-inode-seq create-array-node-seq create-node
                             mask bitmap-indexed-node-index bitpos]))
 
-(declare NodeSeq TransientHashMap PersistentHashMap)
+(declare NodeSeq HashCollisionNode TransientHashMap PersistentHashMap)
 
 (deftype Box [^:mutable added ^:mutable modified])
 
@@ -58,7 +58,21 @@
       (array-copy arr (+ 2 idx-old) dst idx-old (- idx-new idx-old))
       (aset dst idx-new node)
       (array-copy arr (+ idx-new 2) dst (inc idx-new) (- (alength arr) idx-new 2))
-      (BitmapIndexedNode. e (bit-or datamap bit) (bit-xor nodemap bit) dst)))
+      (BitmapIndexedNode. e (bit-xor datamap bit) (bit-or nodemap bit) dst)))
+
+  (merge-two-kv-pairs [inode medit shift key1 val1 key2hash key2 val2]
+    (let [key1hash (hash key1)]
+      (if (and (< shift 32) (== key1hash key2hash))
+        (HashCollisionNode. medit key1hash 2 (array key1 val1 key2 val2))
+        (let [mask1 (mask key1hash shift)
+              mask2 (mask key2hash shift)]
+          (if (== mask1 mask2)
+            (let [new-node (.merge-two-kv-pairs inode medit (+ shift 5) key1 val1 key2hash key2 val2)]
+              (BitmapIndexedNode. medit 0 (bitpos key1hash shift) (array new-node)))
+            (let [new-datamap (bit-or (bitpos key1hash shift) (bitpos key2hash shift))]
+              (if (< mask1 mask2)
+                (BitmapIndexedNode. medit new-datamap 0 (array key1 val1 key2 val2))
+                (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1)))))))))
 
   (inode-seq [inode]
     (NodeSeq. nil arr (* 2 (bit-count datamap)) (bit-count nodemap) 0 nil nil))
@@ -71,11 +85,10 @@
               k (aget arr (* 2 idx))]
           (set! (.-modified changed?) true)
           (if (= k key)
-            (do
-              (set! (.-added changed?) true)
-              (.copy-and-set-value inode aedit bit val))
+            (.copy-and-set-value inode aedit bit val)
             (let [v (aget arr (inc (* 2 idx)))
-                  new-node (create-node aedit (+ shift 5) k v hash key val)]
+                  new-node (.merge-two-kv-pairs inode aedit (+ shift 5) k v hash key val)]
+              (set! (.-added changed?) true)
               (.copy-and-migrate-to-node inode aedit bit new-node))))
         (not (zero? (bit-and nodemap bit)))
         (let [sub-node (node-at arr nodemap bit)
@@ -84,13 +97,13 @@
             (.copy-and-set-node inode aedit bit sub-node-new)
             inode))
         :else
-        (let [n (bit-count datamap)
-              idx (bitmap-indexed-node-index datamap bit)
-              new-arr (make-array (* 2 (inc n)))]
-          (array-copy arr 0 new-arr 0 (* 2 idx))
-          (aset new-arr (* 2 idx) key)
-          (aset new-arr (inc (* 2 idx)) val)
-          (array-copy arr (* 2 idx) new-arr (* 2 (inc idx)) (* 2 (- n idx)))
+        (let [n (alength arr)
+              idx (* 2 (bitmap-indexed-node-index datamap bit))
+              new-arr (make-array (+ 2 n))]
+          (array-copy arr 0 new-arr 0 idx )
+          (aset new-arr idx key)
+          (aset new-arr (inc idx) val)
+          (array-copy arr idx new-arr (+ 2 idx) (- n idx))
           (set! (.-added changed?) true)
           (BitmapIndexedNode. aedit (bit-or datamap bit) nodemap new-arr)))))
 
@@ -107,6 +120,7 @@
         (.inode-lookup (node-at arr nodemap bit) (+ shift 5) hash key not-found)
         :else
         not-found)))
+
   (inode-find [inode shift hash key not-found]
     (let [bit (bitpos hash shift)]
       (cond
@@ -324,16 +338,25 @@
   (-reduce [coll f start] (seq-reduce f start coll)))
 
 (extend-protocol IPrintWithWriter
+  NodeSeq
+  (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
   PersistentHashMap
   (-pr-writer [coll writer opts]
     (print-map coll pr-writer writer opts)))
 
 (comment
   (let [em (.-EMPTY PersistentHashMap)
+        times 12
         hm1 (loop [m em i 0]
-              (if (< i 50)
+              (if (< i times)
                 (recur (assoc m (str "key" i) i) (inc i))
-                m))]
-    (println hm1)
-    [(= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range 50))))
-     (= (keys hm1) (map (fn [[k v]] k) hm1))]))
+                m))
+        root (.-root hm1)]
+
+    [ (count hm1)  (seq hm1)]
+    #_[(count hm1)
+       (= (into #{} (vals hm1)) (into #{} (range times)))
+       (= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range times))))
+       (= (keys hm1) (map (fn [[k v]] k) hm1))
+       (= (into #{} (keys hm1)) (into #{} (map #(str "key" %) (range times))))])
+  )

@@ -75,7 +75,7 @@
                 (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1)))))))))
 
   (inode-seq [inode]
-    (NodeSeq. nil arr (* 2 (bit-count datamap)) (bit-count nodemap) 0 nil nil))
+    (NodeSeq. nil arr (dec (* 2 (bit-count datamap))) (dec (alength arr)) 0 nil nil))
 
   (inode-assoc [inode aedit shift hash key val changed?]
     (let [bit (bitpos hash shift)]
@@ -295,7 +295,7 @@
   ITransientAssociative
   (-assoc! [tcoll key val] (.assoc! tcoll key val)))
 
-(deftype NodeSeq [meta nodes dlen nlen i s ^:mutable __hash]
+(deftype NodeSeq [meta nodes dlen nloc i s ^:mutable __hash]
   Object
   (toString [coll]
     (pr-str* coll))
@@ -306,7 +306,7 @@
   (-meta [coll] meta)
 
   IWithMeta
-  (-with-meta [coll meta] (NodeSeq. meta nodes dlen nlen i s __hash))
+  (-with-meta [coll meta] (NodeSeq. meta nodes dlen nloc i s __hash))
 
   ICollection
   (-conj [coll o] (cons o coll))
@@ -323,15 +323,8 @@
 
   (-rest [coll]
     (if (nil? s)
-      (let [len (alength nodes)]
-        (cond
-          (< i dlen)
-          (NodeSeq. meta nodes dlen nlen (+ i 2) nil nil)
-          (and (== i dlen) (not (zero? nlen)))
-          (NodeSeq. meta nodes dlen nlen len (aget nodes len) nil)
-          :else
-          (NodeSeq. meta nodes dlen nlen (dec i) (aget nodes (dec i)) nil)))
-      (NodeSeq. meta nodes dlen nlen i (next s) nil)))
+      (create-inode-seq nodes (+ i 2) dlen nloc nil)
+      (create-inode-seq nodes i dlen nloc (next s))))
 
   ISeqable
   (-seq [this] this)
@@ -345,6 +338,15 @@
   IReduce
   (-reduce [coll f] (seq-reduce f coll))
   (-reduce [coll f start] (seq-reduce f start coll)))
+
+(defn- create-inode-seq [nodes i dlen nloc s]
+  (if (nil? s)
+    (cond
+      (< i dlen)
+      (NodeSeq. nil nodes dlen nloc i nil nil)
+      (> nloc dlen)
+      (NodeSeq. nil nodes dlen (dec nloc) i (.inode-seq (aget nodes nloc)) nil))
+    (NodeSeq. nil nodes dlen nloc i s nil)))
 
 (extend-protocol IPrintWithWriter
   NodeSeq
@@ -361,8 +363,8 @@
                 (recur (assoc m (str "key" i) i) (inc i))
                 m))
         root (.-root hm1)]
-
-    [ (count hm1)  (seq hm1)]
+    (println hm1)
+    ;[ (count hm1)  (seq hm1)]
     #_[(count hm1)
        (= (into #{} (vals hm1)) (into #{} (range times)))
        (= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range times))))

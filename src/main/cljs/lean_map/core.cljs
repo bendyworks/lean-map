@@ -84,7 +84,7 @@
         (let [idx (bitmap-indexed-node-index datamap bit)
               k (aget arr (* 2 idx))]
           (set! (.-modified changed?) true)
-          (if (= k key)
+          (if (key-test k key)
             (.copy-and-set-value inode aedit bit val)
             (let [v (aget arr (inc (* 2 idx)))
                   new-node (.merge-two-kv-pairs inode aedit (+ shift 5) k v hash key val)]
@@ -92,7 +92,7 @@
               (.copy-and-migrate-to-node inode aedit bit new-node))))
         (not (zero? (bit-and nodemap bit)))
         (let [sub-node (aget arr (node-at arr nodemap bit))
-              sub-node-new (.inode_assoc sub-node aedit shift hash key val changed?)]
+              sub-node-new (.inode-assoc sub-node aedit (+ shift 5) hash key val changed?)]
           (if (.-modified changed?)
             (.copy-and-set-node inode aedit bit sub-node-new)
             inode))

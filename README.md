@@ -1,4 +1,4 @@
-# fast-map
+# lean-map
 
 A ClojreScript implementation of Lean Hash Array Mapped Tries. See (reference)[https://github.com/usethesource/capsule]
 

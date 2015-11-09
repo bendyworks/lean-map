@@ -1,4 +1,4 @@
-(ns cljs.fast-map.test.utils)
+(ns cljs.lean-map.test.utils)
 
 (defn pr-meta [v]
   (if-let [m (meta v)]

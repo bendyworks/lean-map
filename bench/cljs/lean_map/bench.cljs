@@ -1,4 +1,4 @@
-(ns cljs.fast-map.bench)
+(ns cljs.lean-map.bench)
 
 (def small-map-size 100)
 (def small-map-sample 2000)

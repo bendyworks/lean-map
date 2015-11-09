@@ -1,7 +1,7 @@
-(ns cljs.fast-map.test.core
+(ns cljs.lean-map.test.core
   (:require
     [clojure.test.check.generators :as gen]
-    [cljs.fast-map.test.collections :as colls])
+    [cljs.lean-map.test.collections :as colls])
   (:require-macros
     [cljs.test :as ctest]))
 

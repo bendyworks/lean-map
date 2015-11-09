@@ -3,7 +3,7 @@
 (require '[cljs.repl.browser :as browser])
 
 (b/build (b/inputs "src/main" "src/dev")
-  {:main 'cljs.fast-map.dev
+  {:main 'cljs.lean-map.dev
    :asset-path "out"
    :output-to "resources/out/app.js"
    :output-dir "resources/out"

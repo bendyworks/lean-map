@@ -1,13 +1,13 @@
-(ns cljs.fast-map.test.collections
+(ns cljs.lean-map.test.collections
   (:require
     [clojure.test.check.generators :as gen]
-    [cljs.fast-map.test.utils :as utils]
+    [cljs.lean-map.test.utils :as utils]
     [com.gfredericks.test.chuck.clojure-test :as chuck :include-macros true]
     [cljs.test :refer [do-report]])
   (:require-macros
     [cljs.test :refer [is]]
     [clojure.test.check :refer [quick-check]]
-    [cljs.fast-map.test.macros :as macros]))
+    [cljs.lean-map.test.macros :as macros]))
 
 (defn gen-meta [gen]
   (gen/fmap

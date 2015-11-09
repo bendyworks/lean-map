@@ -12,4 +12,4 @@ pom.xml.asc
 .cljs_node_repl/
 .idea/
 resources/out/
-fast-map.iml
+*.iml

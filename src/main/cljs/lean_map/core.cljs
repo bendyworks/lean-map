@@ -1,4 +1,4 @@
-(ns cljs.fast-map.core
+(ns cljs.lean-map.core
   (:refer-clojure :exclude [Box ->Box BitmapIndexedNode ->BitmapIndexedNode
                             HashCollisionNode ->HashCollisionNode
                             PersistentHashMap ->PersistentHashMap

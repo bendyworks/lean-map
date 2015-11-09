@@ -1,4 +1,4 @@
-(ns cljs.fast-map.dev
+(ns cljs.lean-map.dev
   (:require [clojure.browser.repl :as repl]))
 
 (defonce conn

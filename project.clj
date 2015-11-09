@@ -1,4 +1,4 @@
-(defproject fast-map "0.1.0-SNAPSHOT"
+(defproject lean-map "0.1.0-SNAPSHOT"
   :description "Lean Hash Array Mapped Trie implementation in ClojureScript"
 
   :license {:name "Eclipse Public License"

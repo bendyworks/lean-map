@@ -172,15 +172,6 @@
             (key-test key (aget arr idx)) [(aget arr idx) (aget arr (inc idx))]
             :else                  not-found))))
 
-(defn- create-node [edit shift key1 val1 key2hash key2 val2]
-  (let [key1hash (hash key1)]
-    (if (== key1hash key2hash)
-      (HashCollisionNode. nil key1hash 2 (array key1 val1 key2 val2))
-      (let [changed? (Box. false false)]
-        (-> (.-EMPTY BitmapIndexedNode)
-            (.inode-assoc edit shift key1hash key1 val1 changed?)
-            (.inode-assoc edit shift key2hash key2 val2 changed?))))))
-
 (deftype PersistentHashMap [meta cnt root ^:mutable __hash]
   Object
   (toString [coll]

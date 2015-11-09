@@ -26,7 +26,7 @@
   (- (alength arr) 1 (bitmap-indexed-node-index nodemap bit)))
 
 (defn- can-edit [x y]
-  (and (not= x nil) (not= y nil) (identical? x y)))
+  (and (coercive-not= x nil) (coercive-not= y nil) (identical? x y)))
 
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object

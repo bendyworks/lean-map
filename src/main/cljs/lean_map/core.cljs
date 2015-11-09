@@ -52,7 +52,7 @@
 
   (copy-and-migrate-to-node [inode e bit node]
     (let [idx-old (* 2 (bitmap-indexed-node-index datamap bit))
-          idx-new (- (alength arr) 2 (* 2 (bitmap-indexed-node-index nodemap bit)))
+          idx-new (- (alength arr) 2 (bitmap-indexed-node-index nodemap bit))
           dst (make-array (dec (alength arr)))]
       (array-copy arr 0 dst 0 idx-old)
       (array-copy arr (+ 2 idx-old) dst idx-old (- idx-new idx-old))
@@ -355,10 +355,12 @@
   (-pr-writer [coll writer opts]
     (print-map coll pr-writer writer opts)))
 
+(def lem (.-EMPTY PersistentHashMap))
+(def cem (.-EMPTY cljs.core/PersistentHashMap))
+
 (comment
-  (let [em (.-EMPTY PersistentHashMap)
-        times 12
-        hm1 (loop [m em i 0]
+  (let [times 12
+        hm1 (loop [m lem i 0]
               (if (< i times)
                 (recur (assoc m (str "key" i) i) (inc i))
                 m))

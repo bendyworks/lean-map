@@ -91,8 +91,8 @@
               (set! (.-added changed?) true)
               (.copy-and-migrate-to-node inode aedit bit new-node))))
         (not (zero? (bit-and nodemap bit)))
-        (let [sub-node (node-at arr nodemap bit)
-              sub-node-new (.inode_assoc sub-node shift hash key val changed?)]
+        (let [sub-node (aget arr (node-at arr nodemap bit))
+              sub-node-new (.inode_assoc sub-node aedit shift hash key val changed?)]
           (if (.-modified changed?)
             (.copy-and-set-node inode aedit bit sub-node-new)
             inode))
@@ -359,14 +359,14 @@
 (def cem (.-EMPTY cljs.core/PersistentHashMap))
 
 (comment
-  (let [times 12
+  (let [times 50
         hm1 (loop [m lem i 0]
               (if (< i times)
                 (recur (assoc m (str "key" i) i) (inc i))
                 m))
         root (.-root hm1)]
     (println hm1)
-    ;[ (count hm1)  (seq hm1)]
+    [ (count hm1)  (seq hm1)]
     #_[(count hm1)
        (= (into #{} (vals hm1)) (into #{} (range times)))
        (= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range times))))

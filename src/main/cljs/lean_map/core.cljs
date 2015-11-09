@@ -105,6 +105,7 @@
           (aset new-arr (inc idx) val)
           (array-copy arr idx new-arr (+ 2 idx) (- n idx))
           (set! (.-added changed?) true)
+          (set! (.-modified changed?) true)
           (BitmapIndexedNode. aedit (bit-or datamap bit) nodemap new-arr)))))
 
   (inode-lookup [inode shift hash key not-found]

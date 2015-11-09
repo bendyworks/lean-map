@@ -233,12 +233,9 @@
         (PersistentHashMap. meta (if ^boolean (.-added changed?) (inc cnt) cnt) new-root  nil))))
 
   (-contains-key? [coll k]
-    #_(cond (nil? k)    has-nil?
-          (nil? root) false
-          :else       (not (identical? (.inode-lookup root 0 (hash k) k lookup-sentinel)
-                                       lookup-sentinel))))
-
-
+    (if (nil? root)
+      false
+      (not (identical? (.inode-lookup root 0 (hash k) k lookup-sentinel) lookup-sentinel))))
 
   IEditableCollection
   (-as-transient [coll]

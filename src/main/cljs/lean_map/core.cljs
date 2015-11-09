@@ -118,7 +118,7 @@
             (aget arr (inc (* 2 idx)))
             not-found))
         (not (zero? (bit-and nodemap bit)))
-        (.inode-lookup (node-at arr nodemap bit) (+ shift 5) hash key not-found)
+        (.inode-lookup (aget arr (node-at arr nodemap bit)) (+ shift 5) hash key not-found)
         :else
         not-found)))
 

@@ -263,7 +263,7 @@
                            ^:mutable root
                            ^:mutable count]
   Object
-  #_(conj! [tcoll o]
+  (conj! [tcoll o]
     (if edit
       (if (satisfies? IMapEntry o)
         (.assoc! tcoll (key o) (val o))
@@ -280,7 +280,7 @@
             node        (-> (if (nil? root)
                               (.-EMPTY BitmapIndexedNode)
                               root)
-                            (.inode-assoc nil edit 0 (hash k) k v changed?))]
+                            (.inode-assoc edit 0 (hash k) k v changed?))]
         (if (identical? node root)
           nil
           (set! root node))
@@ -302,7 +302,7 @@
       (throw (js/Error. "count after persistent!"))))
 
   ITransientCollection
-  (-conj! [tcoll val] #_(.conj! tcoll val))
+  (-conj! [tcoll val] (.conj! tcoll val))
 
   (-persistent! [tcoll] (.persistent! tcoll))
 

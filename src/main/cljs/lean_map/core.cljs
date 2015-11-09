@@ -75,7 +75,9 @@
                 (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1)))))))))
 
   (inode-seq [inode]
-    (NodeSeq. nil arr (dec (* 2 (bit-count datamap))) (dec (alength arr)) 0 nil nil))
+    (if (zero? datamap)
+      (NodeSeq. nil arr -1 (dec (alength arr)) 0 (.inode-seq (aget arr (dec (alength arr)))) nil)
+      (NodeSeq. nil arr (dec (* 2 (bit-count datamap))) (dec (alength arr)) 0 nil nil)))
 
   (inode-assoc [inode aedit shift hash key val changed?]
     (let [bit (bitpos hash shift)]

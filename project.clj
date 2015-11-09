@@ -9,6 +9,6 @@
   :jvm-opts ^:replace ["-Xms512m" "-Xmx512m" "-server"]
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "1.7.145"]
+                 [org.clojure/clojurescript "1.7.170"]
                  [org.clojure/test.check "0.8.2"]
                  [com.gfredericks/test.chuck "0.2.0"]])

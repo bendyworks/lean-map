@@ -221,6 +221,24 @@
       (cond (< idx 0)              not-found
             (key-test key (aget arr idx)) [(aget arr idx) (aget arr (inc idx))]
             :else                  not-found)))
+
+  (inode-without [inode wedit shift hash key changed?]
+    (let [idx (hash-collision-node-find-index arr cnt key)]
+      (if (== idx -1)
+        inode
+        (do
+          (set! (.-modified changed?) true)
+          (case cnt
+           1 (.-EMPTY BitmapIndexedNode)
+           2 (.inode_assoc (.-EMPTY BitmapIndexedNode) wedit shift hash
+                            (aget arr idx) (aget arr (inc idx))
+                            changed?)
+           (let [i (quot idx 2)
+                 new-arr (make-array (- (alength arr) 2))]
+             (array-copy arr 0 new-arr 0 (* 2 i))
+             (array-copy arr (* 2 (inc i)) new-arr (* 2 i) (- (alength new-arr) (* 2 i)))
+             (HashCollisionNode. wedit hash (dec cnt) new-arr)))))))
+
   (single-kv? [_]
     false))
 

@@ -151,11 +151,14 @@
           idx-new (* 2 (bitmap-indexed-node-index datamap bit))
           dst (make-array (inc (alength arr)))]
       (array-copy arr 0 dst 0 idx-new)
-      (aset dst idx-new (aget node 0))
-      (aset dst idx-new (aget node 1))
+      (aset dst idx-new (aget (.-arr node) 0))
+      (aset dst (inc idx-new) (aget (.-arr node) 1))
       (array-copy arr idx-new dst (+ idx-new 2) (- idx-old idx-new))
       (array-copy arr (inc idx-old) dst (+ idx-old 2) (- (alength arr) idx-old 1))
       (BitmapIndexedNode. e (bit-or datamap bit) (bit-xor nodemap bit) dst)))
+
+  (single-kv? [_]
+    (and (zero? nodemap) (== 1 (bit-count datamap))))
 
   (inode-without [inode wedit shift hash key changed?]
     (let [bit (bitpos hash shift)]
@@ -176,10 +179,10 @@
         (let [sub-node (aget arr (node-at arr nodemap bit))
               sub-node-new (.inode-without sub-node wedit (+ shift 5) hash key changed?)]
           (if (.-modified changed?)
-            (if (== 1 (bit-count nodemap))
-              (if (zero? datamap)
-                (.copy-and-migrate-to-inline inode wedit bit sub-node-new)
-                sub-node-new)
+            (if (.single-kv? sub-node-new)
+              (if (and (zero? datamap) (== 1 (bit-count nodemap)))
+                sub-node-new
+                (.copy-and-migrate-to-inline inode wedit bit sub-node-new))
               (.copy-and-set-node inode wedit bit sub-node-new))
             inode))
         :else
@@ -217,7 +220,9 @@
     (let [idx (hash-collision-node-find-index arr cnt key)]
       (cond (< idx 0)              not-found
             (key-test key (aget arr idx)) [(aget arr idx) (aget arr (inc idx))]
-            :else                  not-found))))
+            :else                  not-found)))
+  (single-kv? [_]
+    false))
 
 (deftype PersistentHashMap [meta cnt root ^:mutable __hash]
   Object
@@ -432,18 +437,18 @@
          (= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range times))))
          (= (keys hm1) (map (fn [[k v]] k) hm1))
          (= (into #{} (keys hm1)) (into #{} (map #(str "key" %) (range times))))])
-    (let [subchan (/ times 2)
-          dtimes (- times subchan)
-          dhm1 (loop [m hm1 i 0]
-                 (if (< i subchan)
-                   (recur (dissoc m (str "key" (- times i 1))) (inc i))
-                   m))]
-      ["dissoc"
-       (count dhm1)
-       (= (into #{} (vals dhm1)) (into #{} (range dtimes)))
-       (= (into #{} (vals dhm1)) (into #{} (map #(get dhm1 (str "key" %)) (range dtimes))))
-       (= (keys dhm1) (map (fn [[k v]] k) dhm1))
-       (= (into #{} (keys dhm1)) (into #{} (map #(str "key" %) (range dtimes))))]))
+      (let [subchan (/ times 2)
+            dtimes (- times subchan)
+            dhm1 (loop [m hm1 i 0]
+                   (if (< i subchan)
+                     (recur (dissoc m (str "key" (- times i 1))) (inc i))
+                     m))]
+            ["dissoc"
+             (count dhm1)
+             (= (into #{} (vals dhm1)) (into #{} (range dtimes)))
+             (= (into #{} (vals dhm1)) (into #{} (map #(get dhm1 (str "key" %)) (range dtimes))))
+             (= (keys dhm1) (map (fn [[k v]] k) dhm1))
+             (= (into #{} (keys dhm1)) (into #{} (map #(str "key" %) (range dtimes))))]))
   (do
     (js/console.profile "CLJS Map")
     (let [times 10000

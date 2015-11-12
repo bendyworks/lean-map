@@ -5,7 +5,7 @@
                             TransientHashMap ->TransientHashMap
                             NodeSeq ->NodeSeq
                             create-inode-seq create-array-node-seq create-node
-                            mask bitmap-indexed-node-index bitpos]))
+                            mask bitmap-indexed-node-index bitpos inode-kv-reduce]))
 
 (declare NodeSeq HashCollisionNode TransientHashMap PersistentHashMap)
 
@@ -27,6 +27,22 @@
 
 (defn- can-edit [x y]
   (and (coercive-not= x nil) (coercive-not= y nil) (identical? x y)))
+
+(defn- inode-kv-reduce [arr kvs nodes f init]
+  (let [kv-len (* 2 kvs)
+        node-len (+ kv-len nodes)]
+    (loop [i 0 init init]
+      (cond (< i kv-len)
+            (let [init (f init (aget arr i) (aget arr (inc i)))]
+              (if (reduced? init)
+                @init
+                (recur (+ i 2) init)))
+            (< i node-len)
+            (let [init (.kv-reduce (aget arr i) f init)]
+              (if (reduced? init)
+                @init
+                (recur (inc i) init)))
+            :else init))))
 
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object
@@ -157,6 +173,9 @@
       (array-copy arr (inc idx-old) dst (+ idx-old 2) (- (alength arr) idx-old 1))
       (BitmapIndexedNode. e (bit-or datamap bit) (bit-xor nodemap bit) dst)))
 
+  (kv-reduce [inode f init]
+    (inode-kv-reduce arr (bit-count datamap) (bit-count nodemap) f init))
+
   (single-kv? [_]
     (and (zero? nodemap) (== 1 (bit-count datamap))))
 
@@ -238,6 +257,9 @@
              (array-copy arr 0 new-arr 0 (* 2 i))
              (array-copy arr (* 2 (inc i)) new-arr (* 2 i) (- (alength new-arr) (* 2 i)))
              (HashCollisionNode. wedit hash (dec cnt) new-arr)))))))
+
+  (kv-reduce [inode f init]
+    (inode-kv-reduce arr cnt 0 f init))
 
   (single-kv? [_]
     false))
@@ -325,7 +347,14 @@
       (let [new-root (.inode-without root nil 0 (hash k) k (Box. false false))]
         (if (identical? new-root root)
           coll
-          (PersistentHashMap. meta (dec cnt) new-root nil))))))
+          (PersistentHashMap. meta (dec cnt) new-root nil)))))
+
+  IKVReduce
+  (-kv-reduce [coll f init]
+    (cond
+      (reduced? init)          @init
+      (not (nil? root)) (.kv-reduce root f init)
+      :else                    init)))
 
 (set! (.-EMPTY PersistentHashMap) (PersistentHashMap. nil 0 nil empty-unordered-hash))
 
@@ -470,8 +499,10 @@
         ["assoc"
          (count hm1)
          (= (into #{} (vals hm1)) (into #{} (range times)))
+         (= (reduce-kv #(conj %1 %3) #{} hm1) (into #{} (range times)))
          (= (into #{} (vals hm1)) (into #{} (map #(get hm1 (str "key" %)) (range times))))
          (= (keys hm1) (map (fn [[k v]] k) hm1))
+         (= (reduce-kv #(conj %1 %2) #{} hm1) (into #{} (map #(str "key" %) (range times))))
          (= (into #{} (keys hm1)) (into #{} (map #(str "key" %) (range times))))])
       (let [subchan (/ times 2)
             dtimes (- times subchan)
@@ -482,8 +513,10 @@
             ["dissoc"
              (count dhm1)
              (= (into #{} (vals dhm1)) (into #{} (range dtimes)))
+             (= (reduce-kv #(conj %1 %3) #{} dhm1) (into #{} (range dtimes)))
              (= (into #{} (vals dhm1)) (into #{} (map #(get dhm1 (str "key" %)) (range dtimes))))
              (= (keys dhm1) (map (fn [[k v]] k) dhm1))
+             (= (reduce-kv #(conj %1 %2) #{} dhm1) (into #{} (map #(str "key" %) (range dtimes))))
              (= (into #{} (keys dhm1)) (into #{} (map #(str "key" %) (range dtimes))))]))
   (do
     (js/console.profile "CLJS Map")

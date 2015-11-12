@@ -1,6 +1,6 @@
 # Lean Hash Array Mapped Trie (Lean Map)
 
-A ClojureScript implementation of Lean Hash Array Mapped Tries. See [reference][lmp].
+A ClojureScript implementation of Lean Hash Array Mapped Tries. See [reference](https://github.com/usethesource/capsule).
 
 This is __NOT__ ready for production use right now
 
@@ -56,25 +56,20 @@ that has an unnecessary HAMT node (HAMT Node 2). Ideally the delete operation sh
 
 removing the superfluous HAMT node
 
-According to the [paper][lmp] this leads to an 80 to 100 percent speedup for iteration and equality checks and comparable to better performance on insertion, deletion, and lookup.
+According to the [paper](http://michael.steindorfer.name/publications/oopsla15.pdf) this leads to an 80 to 100 percent speedup for iteration and equality checks and comparable to better performance on insertion, deletion, and lookup.
 
 ### Thanks
 
-- [Bendyworks][bw] for letting me work on this
+* [Bendyworks](https://bendyworks.com/) for letting me work on this
 
-* Michael J. Steindorfer and Jurgen J. Vinju for the [Lean HAMT Paper][lmp]
+* Michael J. Steindorfer and Jurgen J. Vinju for the [Lean HAMT Paper](https://github.com/usethesource/capsule)
 
-- Use The Source for their reference [implementation][lms]
+* Use The Source for their reference [implementation](https://github.com/usethesource/capsule)
 
-- Zach Tellman for writing [Collection Check][cc] which I've transplanted to ClojureScript
+* Zach Tellman for writing [Collection Check](https://github.com/ztellman/collection-check) which I've transplanted to ClojureScript
 
 ### License
 
 Copyright © 2015 Peter Schuck
 
 Distributed under the Eclipse Public License either version 1.0 or (at your option) any later version.
-
-[lms]: [https://github.com/usethesource/capsule]
-[cc]: [https://github.com/ztellman/collection-check]
-[lmp]: [http://michael.steindorfer.name/publications/oopsla15.pdf]
-[bw]: [https://bendyworks.com/]

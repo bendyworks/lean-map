@@ -359,6 +359,21 @@
         tcoll)
       (throw (js/Error. "assoc! after persistent!"))))
 
+  (without! [tcoll k]
+    (if edit
+      (if (nil? root)
+        tcoll
+        (let [removed-leaf? (Box. false false)
+              node (.inode-without root edit 0 (hash k) k removed-leaf?)]
+          (if (identical? node root)
+            nil
+            (set! root node))
+          (if (.-modified removed-leaf?)
+            (set! count (dec count)))
+          tcoll))
+      (throw (js/Error. "dissoc! after persistent!"))))
+
+
   (persistent! [tcoll]
     (if edit
       (do (set! edit nil)
@@ -377,7 +392,10 @@
   (-persistent! [tcoll] (.persistent! tcoll))
 
   ITransientAssociative
-  (-assoc! [tcoll key val] (.assoc! tcoll key val)))
+  (-assoc! [tcoll key val] (.assoc! tcoll key val))
+
+  ITransientMap
+  (-dissoc! [tcoll key] (.without! tcoll key)))
 
 (deftype NodeSeq [meta nodes dlen nloc i s ^:mutable __hash]
   Object

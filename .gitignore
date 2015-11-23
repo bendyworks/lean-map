@@ -10,6 +10,8 @@ pom.xml.asc
 .hgignore
 .hg/
 .cljs_node_repl/
+.repl-*
 .idea/
-resources/out/
+resources/*
+/dev
 *.iml

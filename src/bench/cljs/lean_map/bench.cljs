@@ -101,7 +101,7 @@
   (doseq [benchmark benchmarks]
     (map-bench benchmark empty-map data)))
 
-(def lem (.-EMPTY PersistentHashMap))
+(def lem (.-EMPTY lean/PersistentHashMap))
 (def cem (.-EMPTY cljs.core/PersistentHashMap))
 
 (def test-keys (mapv (fn [i]

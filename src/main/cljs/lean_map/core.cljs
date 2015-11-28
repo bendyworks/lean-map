@@ -1,4 +1,6 @@
 (ns cljs.lean-map.core
+  (:require [collection-check.core :as cc]
+            [clojure.test.check.generators :as gen])
   (:refer-clojure :exclude [Box ->Box BitmapIndexedNode ->BitmapIndexedNode
                             HashCollisionNode ->HashCollisionNode
                             PersistentHashMap ->PersistentHashMap
@@ -490,6 +492,7 @@
 (def cem (.-EMPTY cljs.core/PersistentHashMap))
 
 (comment
+  (cc/assert-map-like 100 lem (gen/tuple gen/int) (gen/tuple gen/int))
   (let [times 100
         hm1 (loop [m lem i 0]
                (if (< i times)

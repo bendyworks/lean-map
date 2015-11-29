@@ -126,6 +126,18 @@
           (set! (.-modified changed?) true)
           (BitmapIndexedNode. aedit (bit-or datamap bit) nodemap new-arr)))))
 
+  (has-nodes? [_]
+    (not (zero? nodemap)))
+
+  (node-arity [_]
+    (bit-count nodemap))
+
+  (has-data? [_]
+    (not (zero? datamap)))
+
+  (data-arity [_]
+    (bit-count datamap))
+
   (inode-lookup [inode shift hash key not-found]
     (let [bit (bitpos hash shift)]
       (cond
@@ -228,6 +240,18 @@
         (if (= (aget arr idx) val)
           inode
           (HashCollisionNode. nil collision-hash cnt (clone-and-set arr (inc idx) val))))))
+
+  (has-nodes? [_]
+    false)
+
+  (node-arity [_]
+    0)
+
+  (has-data? [_]
+    true)
+
+  (data-arity [_]
+    cnt)
 
   (inode-lookup [inode shift hash key not-found]
     (let [idx (hash-collision-node-find-index arr cnt key)]

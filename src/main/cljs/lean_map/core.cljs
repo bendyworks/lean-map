@@ -138,6 +138,12 @@
   (data-arity [_]
     (bit-count datamap))
 
+  (get-node [_ i]
+    (aget arr (- (alength arr) 1 i)))
+
+  (get-array [_]
+    arr)
+
   (inode-lookup [inode shift hash key not-found]
     (let [bit (bitpos hash shift)]
       (cond
@@ -252,6 +258,12 @@
 
   (data-arity [_]
     cnt)
+
+  (get-node [_ _]
+    nil)
+
+  (get-array [_]
+    arr)
 
   (inode-lookup [inode shift hash key not-found]
     (let [idx (hash-collision-node-find-index arr cnt key)]
@@ -513,8 +525,56 @@
 (def lem (.-EMPTY PersistentHashMap))
 (def cem (.-EMPTY cljs.core/PersistentHashMap))
 
+(defn node-next-seq [arr lvl nodes cursors-lengths data-idx data-len]
+  (if (< (inc data-idx) data-len)
+    [arr lvl nodes cursors-lengths (inc data-idx) data-len]
+    (let [nodes     (aclone nodes)
+          cursors-lengths (aclone cursors-lengths)]
+     (loop [lvl lvl]
+       (when (>= lvl 0)
+         (let [node-idx (aget cursors-lengths (* lvl 2))
+               node-len (aget cursors-lengths (inc (* lvl 2)))]
+          (if (< node-idx node-len)
+            (let [node (.get-node (aget nodes lvl) node-idx)
+                  has-nodes ^boolean (.has-nodes? node)
+                  new-lvl (if has-nodes (inc lvl) lvl)]
+              (aset cursors-lengths (* lvl 2) (inc node-idx))
+              (when has-nodes
+                (aset nodes new-lvl node)
+                (aset cursors-lengths (* new-lvl 2) 0)
+                (aset cursors-lengths (inc (* new-lvl 2)) (.node-arity node)))
+              (if ^boolean (.has-data? node)
+                [(.get-array node) new-lvl nodes cursors-lengths 0 (.data-arity node)]
+                (recur (inc lvl))))
+            (recur (dec lvl)))))))))
+
 (comment
-  (let [times 100
+  (def test-keys (mapv (fn [i]
+                         (let [nk (keyword (str "key" i))]
+                           (hash nk)
+                           nk))
+                       (range 10000)))
+  (def thm (loop [m lem i 0]
+             (if (< i 100)
+               (recur (assoc m (nth test-keys i) i) (inc i))
+               m)))
+  (let [thm (loop [m lem i 0]
+              (if (< i 10000)
+                (recur (assoc m (nth test-keys i) i) (inc i))
+                m))
+        root (.-root thm)
+        nodes (make-array 7)
+        cursors-lengths (make-array 14)]
+    (aset nodes 0 root)
+    (aset cursors-lengths 0 0)
+    (aset cursors-lengths 1 (.node-arity root))
+    (let [args [(.get-array root) 0 nodes cursors-lengths 0 (.data-arity root)]
+          args (if ^boolean (.has-data? root) args (apply node-next-seq args))]
+      (loop [i 1 args args]
+        (if-let [nargs (apply node-next-seq args)]
+          (recur (inc i) nargs)
+          i))))
+  (let [times 1000
         hm1 (loop [m lem i 0]
                (if (< i times)
                  (recur (assoc m (str "key" i) i) (inc i))

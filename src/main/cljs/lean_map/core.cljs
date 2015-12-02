@@ -91,9 +91,14 @@
                 (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1)))))))))
 
   (inode-seq [inode]
-    (if (zero? datamap)
-      (NodeSeq. nil arr -1 (dec (alength arr)) 0 (.inode-seq (aget arr (dec (alength arr)))) nil)
-      (NodeSeq. nil arr (dec (* 2 (bit-count datamap))) (dec (alength arr)) 0 nil nil)))
+    (let [nodes (make-array 7)
+          cursors-lengths (make-array 14)]
+      (aset nodes 0 inode)
+      (aset cursors-lengths 0 0)
+      (aset cursors-lengths 1 (.node-arity inode))
+      (if (zero? datamap)
+        (create-inode-seq arr 0 nodes cursors-lengths 0 (.data-arity inode))
+        (NodeSeq. nil arr 0 nodes cursors-lengths 0 (.data-arity inode) nil))))
 
   (inode-assoc [inode aedit shift hash key val changed?]
     (let [bit (bitpos hash shift)]
@@ -462,7 +467,7 @@
   ITransientMap
   (-dissoc! [tcoll key] (.without! tcoll key)))
 
-(deftype NodeSeq [meta nodes dlen nloc i s ^:mutable __hash]
+(deftype NodeSeq [meta arr lvl nodes cursors-lengths data-idx data-len ^:mutable __hash]
   Object
   (toString [coll]
     (pr-str* coll))
@@ -473,7 +478,7 @@
   (-meta [coll] meta)
 
   IWithMeta
-  (-with-meta [coll meta] (NodeSeq. meta nodes dlen nloc i s __hash))
+  (-with-meta [coll meta] (NodeSeq. meta arr lvl nodes cursors-lengths data-idx data-len __hash))
 
   ICollection
   (-conj [coll o] (cons o coll))
@@ -484,14 +489,10 @@
   ISequential
   ISeq
   (-first [coll]
-    (if (nil? s)
-      [(aget nodes i) (aget nodes (inc i))]
-      (first s)))
+    [(aget arr (* data-idx 2)) (aget arr (inc (* data-idx 2)))])
 
   (-rest [coll]
-    (if (nil? s)
-      (create-inode-seq nodes (+ i 2) dlen nloc nil)
-      (create-inode-seq nodes i dlen nloc (next s))))
+    (create-inode-seq arr lvl nodes cursors-lengths data-idx data-len))
 
   ISeqable
   (-seq [this] this)
@@ -506,14 +507,28 @@
   (-reduce [coll f] (seq-reduce f coll))
   (-reduce [coll f start] (seq-reduce f start coll)))
 
-(defn- create-inode-seq [nodes i dlen nloc s]
-  (if (nil? s)
-    (cond
-      (< i dlen)
-      (NodeSeq. nil nodes dlen nloc i nil nil)
-      (> nloc dlen)
-      (NodeSeq. nil nodes dlen (dec nloc) i (.inode-seq (aget nodes nloc)) nil))
-    (NodeSeq. nil nodes dlen nloc i s nil)))
+(defn- create-inode-seq [arr lvl nodes cursors-lengths data-idx data-len]
+  (if (< (inc data-idx) data-len)
+    (NodeSeq. nil arr lvl nodes cursors-lengths (inc data-idx) data-len nil)
+    (let [nodes     (aclone nodes)
+          cursors-lengths (aclone cursors-lengths)]
+      (loop [lvl lvl]
+        (when (>= lvl 0)
+          (let [node-idx (aget cursors-lengths (* lvl 2))
+                node-len (aget cursors-lengths (inc (* lvl 2)))]
+            (if (< node-idx node-len)
+              (let [node (.get-node (aget nodes lvl) node-idx)
+                    has-nodes ^boolean (.has-nodes? node)
+                    new-lvl (if has-nodes (inc lvl) lvl)]
+                (aset cursors-lengths (* lvl 2) (inc node-idx))
+                (when has-nodes
+                  (aset nodes new-lvl node)
+                  (aset cursors-lengths (* new-lvl 2) 0)
+                  (aset cursors-lengths (inc (* new-lvl 2)) (.node-arity node)))
+                (if ^boolean (.has-data? node)
+                  (NodeSeq. nil (.get-array node) new-lvl nodes cursors-lengths 0 (.data-arity node) nil)
+                  (recur (inc lvl))))
+              (recur (dec lvl)))))))))
 
 (extend-protocol IPrintWithWriter
   NodeSeq
@@ -525,29 +540,6 @@
 (def lem (.-EMPTY PersistentHashMap))
 (def cem (.-EMPTY cljs.core/PersistentHashMap))
 
-(defn node-next-seq [arr lvl nodes cursors-lengths data-idx data-len]
-  (if (< (inc data-idx) data-len)
-    [arr lvl nodes cursors-lengths (inc data-idx) data-len]
-    (let [nodes     (aclone nodes)
-          cursors-lengths (aclone cursors-lengths)]
-     (loop [lvl lvl]
-       (when (>= lvl 0)
-         (let [node-idx (aget cursors-lengths (* lvl 2))
-               node-len (aget cursors-lengths (inc (* lvl 2)))]
-          (if (< node-idx node-len)
-            (let [node (.get-node (aget nodes lvl) node-idx)
-                  has-nodes ^boolean (.has-nodes? node)
-                  new-lvl (if has-nodes (inc lvl) lvl)]
-              (aset cursors-lengths (* lvl 2) (inc node-idx))
-              (when has-nodes
-                (aset nodes new-lvl node)
-                (aset cursors-lengths (* new-lvl 2) 0)
-                (aset cursors-lengths (inc (* new-lvl 2)) (.node-arity node)))
-              (if ^boolean (.has-data? node)
-                [(.get-array node) new-lvl nodes cursors-lengths 0 (.data-arity node)]
-                (recur (inc lvl))))
-            (recur (dec lvl)))))))))
-
 (comment
   (def test-keys (mapv (fn [i]
                          (let [nk (keyword (str "key" i))]
@@ -558,22 +550,6 @@
              (if (< i 100)
                (recur (assoc m (nth test-keys i) i) (inc i))
                m)))
-  (let [thm (loop [m lem i 0]
-              (if (< i 10000)
-                (recur (assoc m (nth test-keys i) i) (inc i))
-                m))
-        root (.-root thm)
-        nodes (make-array 7)
-        cursors-lengths (make-array 14)]
-    (aset nodes 0 root)
-    (aset cursors-lengths 0 0)
-    (aset cursors-lengths 1 (.node-arity root))
-    (let [args [(.get-array root) 0 nodes cursors-lengths 0 (.data-arity root)]
-          args (if ^boolean (.has-data? root) args (apply node-next-seq args))]
-      (loop [i 1 args args]
-        (if-let [nargs (apply node-next-seq args)]
-          (recur (inc i) nargs)
-          i))))
   (let [times 1000
         hm1 (loop [m lem i 0]
                (if (< i times)

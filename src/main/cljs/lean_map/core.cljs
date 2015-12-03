@@ -314,6 +314,21 @@
   (equiv [this other]
     (-equiv this other))
 
+  ;; EXPERIMENTAL: subject to change
+  (keys [coll]
+    (es6-iterator (keys coll)))
+  (entries [coll]
+    (es6-entries-iterator (seq coll)))
+  (values [coll]
+    (es6-iterator (vals coll)))
+  (has [coll k]
+    (contains? coll k))
+  (get [coll k not-found]
+    (-lookup coll k not-found))
+  (forEach [coll f]
+    (doseq [[k v] coll]
+      (f v k)))
+
   ICloneable
   (-clone [_] (PersistentHashMap. meta cnt root __hash))
 
@@ -354,6 +369,12 @@
     (if (nil? root)
       not-found (.inode-lookup root 0 (hash k) k not-found)))
 
+  IFn
+  (-invoke [coll k]
+    (-lookup coll k))
+
+  (-invoke [coll k not-found]
+    (-lookup coll k not-found))
 
   ISeqable
   (-seq [coll]

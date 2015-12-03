@@ -22,7 +22,7 @@ This is __NOT__ ready for production use right now
 
 ### Current Status
 
-All standard ClojureScript map functionality (`assoc`, `dissoc`, `get`, `seq`, `reduce-kv`, `persistent!`, and `transient`) have been implemented and have passed the eyeball test. The next step is to run generative tests and fix any bugs those tests find.
+All standard ClojureScript map functionality (`assoc`, `dissoc`, `get`, `seq`, `reduce-kv`, `persistent!`, and `transient`) have been implemented and passed Collection Check tests. The improved iteration has been implemented, the improved equality checking is the last feature that needs to be completed.
 
 ### Main Ideas of the Paper
 

@@ -9,8 +9,9 @@
   :jvm-opts ^:replace ["-Xms512m" "-Xmx512m" "-server"]
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "1.7.170"]
-                 [collection-check "0.1.7-SNAPSHOT"]]
+                 [org.clojure/clojurescript "1.7.170"]]
+
+  :profiles {:test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}}
 
   :plugins [[lein-doo "0.1.6-rc.1"]]
 

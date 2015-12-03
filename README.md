@@ -58,6 +58,16 @@ removing the superfluous HAMT node
 
 According to the [paper](http://michael.steindorfer.name/publications/oopsla15.pdf) this leads to an 80 to 100 percent speedup for iteration and equality checks and comparable to better performance on insertion, deletion, and lookup.
 
+### Testing
+
+Currently testing is done via a collection check port to ClojureScript that will take some time to be offically released. In the meantime here's how you setup the dependencies
+  
+  1. git clone https://github.com/martinklepsch/test.chuck.git
+  2. cd test.chuck; git checkout extensible-shrunk-report; lein install
+  3. git clone https://github.com/martinklepsch/collection-check-1.git
+  4. cd collection-check-1; boot build-jar
+  5. You should now be able to use [collection-check "0.1.7-SNAPSHOT”]
+
 ### Thanks
 
 * [Bendyworks](https://bendyworks.com/) for letting me work on this
@@ -66,7 +76,11 @@ According to the [paper](http://michael.steindorfer.name/publications/oopsla15.p
 
 * Use The Source for their reference [implementation](https://github.com/usethesource/capsule)
 
-* Zach Tellman for writing [Collection Check](https://github.com/ztellman/collection-check) which I've transplanted to ClojureScript
+* Zach Tellman for writing [Collection Check](https://github.com/ztellman/collection-check)
+
+* Martin Klepsch for porting Collection Check to ClojureScript and Nicolás Berger for helping me get it setup
+
+* David Nolen for perf and profiling suggestions
 
 ### License
 

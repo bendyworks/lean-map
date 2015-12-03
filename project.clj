@@ -10,4 +10,20 @@
 
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.170"]
-                 [collection-check "0.1.7-SNAPSHOT"] ])
+                 [collection-check "0.1.7-SNAPSHOT"]]
+
+  :plugins [[lein-doo "0.1.6-rc.1"]]
+
+  :cljsbuild {:builds
+              [{:id "test"
+                :source-paths ["src/main" "test"]
+                :compiler {:output-to "resources/public/js/testable.js"
+                           :main cljs.lean-map.test.runner
+                           :optimizations :none}}
+               {:id "node-test"
+                :source-paths ["src/main" "test"]
+                :compiler {:output-to "resources/public/js/testable.js"
+                           :main cljs.lean-map.test.runner
+                           :output-dir "target"
+                           :target :nodejs
+                           :optimizations :none}}]})

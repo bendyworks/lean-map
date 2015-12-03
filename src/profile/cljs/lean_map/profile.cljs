@@ -17,11 +17,25 @@
       (recur (assoc m (nth test-keys i) i) (inc i))
       m)))
 
+(def seq-lem (lean-assoc))
+
+(defn lean-seq []
+  (loop [s (seq seq-lem)]
+    (if (seq s)
+      (recur (next s)))))
+
 (defn cljs-assoc []
   (loop [m cem i 0]
     (if (< i test-size)
       (recur (assoc m (nth test-keys i) i) (inc i))
       m)))
+
+(def seq-cem (cljs-assoc))
+
+(defn cljs-seq []
+  (loop [s (seq seq-cem)]
+    (if (seq s)
+      (recur (next s)))))
 
 (defn profile [f name]
   (dotimes [i 5]
@@ -31,4 +45,6 @@
 
 (defn run-profile []
   (profile cljs-assoc "ClJS Assoc")
-  (profile lean-assoc "Lean Assoc"))
+  (profile cljs-seq "ClJS Seq")
+  (profile lean-assoc "Lean Assoc")
+  (profile lean-seq "Lean Seq"))

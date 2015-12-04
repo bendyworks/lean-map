@@ -4,6 +4,12 @@ A ClojureScript implementation of Lean Hash Array Mapped Tries. See [reference](
 
 This is __NOT__ ready for production use right now
 
+### Leiningen
+
+```clojure
+[lean-map "0.2.1"]
+```
+
 ### Technical Terms
 
 - HAMT is Hash Array Mapped Trie

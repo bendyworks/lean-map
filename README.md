@@ -61,12 +61,16 @@ According to the [paper](http://michael.steindorfer.name/publications/oopsla15.p
 ### Testing
 
 Currently testing is done via a collection check port to ClojureScript that will take some time to be offically released. In the meantime here's how you setup the dependencies
-  
-  1. git clone https://github.com/martinklepsch/test.chuck.git
-  2. cd test.chuck; git checkout extensible-shrunk-report; lein install
-  3. git clone https://github.com/martinklepsch/collection-check-1.git
-  4. cd collection-check-1; boot build-jar
-  5. You should now be able to use [collection-check "0.1.7-SNAPSHOT”]
+
+  1. git clone https://github.com/martinklepsch/collection-check-1.git
+  2. cd collection-check-1; boot build-jar
+  3. You should now be able to use [collection-check "0.1.7-SNAPSHOT”]
+
+To test on node use `script/node-test.sh`. For phantomjs use `script/phantom-test`. If you want to run tests with a custom engine use:
+
+`lein with-profile test doo <js environment> <name of test build e.g. "test">`
+
+For a custom test build add it to `:cljsbuild` in `project.clj`
 
 ### Thanks
 

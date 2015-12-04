@@ -126,7 +126,7 @@ For a custom test build add it to `:cljsbuild` in `project.clj`
 
 * [Bendyworks](https://bendyworks.com/) for letting me work on this
 
-* Michael J. Steindorfer and Jurgen J. Vinju for the [Lean HAMT Paper](https://github.com/usethesource/capsule)
+* Michael J. Steindorfer and Jurgen J. Vinju for the [Lean HAMT Paper](http://michael.steindorfer.name/publications/oopsla15.pdf)
 
 * Use The Source for their reference [implementation](https://github.com/usethesource/capsule)
 

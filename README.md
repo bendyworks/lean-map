@@ -58,9 +58,53 @@ removing the superfluous HAMT node
 
 According to the [paper](http://michael.steindorfer.name/publications/oopsla15.pdf) this leads to an 80 to 100 percent speedup for iteration and equality checks and comparable to better performance on insertion, deletion, and lookup.
 
+### Usage
+
+Lean HAMT's are implemented in the `cljs.lean-map.core` namespace. User functions live in the `cljs.lean-map.util` namespace. Here is documentation of their usage
+
+* `set-maps-to-lean-map!`
+
+    Modifies the literal maps `{}` so that they become lean-maps instead of standard ClojureScript maps. Note this does __not__ change the `hash-map` function to output lean-maps.
+
+    Usage: `(set-maps-to-lean-map!)`
+
+* `set-maps-to-cljs-map!`
+
+    Modifies the literal maps `{}` back to the default ClojureScript maps.
+
+    Usage: `(set-maps-to-cljs-map!)`
+
+* `using-lean-maps?`
+
+
+    Usage: `(using-lean-maps?)`
+* `lean-map?`
+
+    Check if a map is a lean-map
+
+    Usage: `(lean-map? {0 0 1 1 2 2 3 3 4 4 5 5})`
+
+* `lean-map-seq?`
+
+    Check if a seq is a seq of a lean-map
+
+    Usage: `(lean-map? {0 0 1 1 2 2 3 3 4 4 5 5})`
+
+* `hash-map`
+
+    Copy of the ClojureScript `hash-map` function but returns a lean-map instead of a ClojureScript map.
+
+    Usage: `(hash-map 0 0 1 1 2 2 3 3 4 4 5 5)`
+
+* `empty`
+
+    An empty lean-map for use in place of `{}`
+
+    Usage: `(assoc empty :foo :bar)`
+
 ### Testing
 
-Currently testing is done via a collection check port to ClojureScript that will take some time to be offically released. In the meantime here's how you setup the dependencies
+Currently testing is done via a collection check port to ClojureScript that will take some time to be officially released. In the meantime here's how you setup the dependencies
 
   1. git clone https://github.com/martinklepsch/collection-check-1.git
   2. cd collection-check-1; boot build-jar

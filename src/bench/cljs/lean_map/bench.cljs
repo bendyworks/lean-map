@@ -87,7 +87,12 @@
   (let [maps [small-map medium-map large-map]
         samples [small-map-sample medium-map-sample large-map-sample]]
     (doseq [[m sample] (partition 2 (interleave maps samples))]
-      (simple-benchmark [] (doseq [[k v] m] [v k]) sample))))
+      (simple-benchmark
+        []
+        (loop [s (seq m)]
+          (if (seq s)
+            (recur (next s))))
+        sample))))
 
 (defmethod map-bench :reduce [_ _ {:keys [small-map medium-map large-map]}]
   (println "Reduce")

@@ -1,6 +1,6 @@
 # Lean Hash Array Mapped Trie (Lean Map)
 
-A ClojureScript implementation of Lean Hash Array Mapped Tries. See [reference](https://github.com/usethesource/capsule).
+A ClojureScript implementation of Lean Hash Array Mapped Tries. See [reference](http://michael.steindorfer.name/publications/oopsla15.pdf).
 
 This is __NOT__ ready for production use right now
 

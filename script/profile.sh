@@ -1,2 +1,2 @@
 #!/bin/sh
-lein trampoline run -m clojure.main script/bench.clj
+lein trampoline run -m clojure.main script/profile.clj

@@ -487,7 +487,7 @@
   ITransientMap
   (-dissoc! [tcoll key] (.without! tcoll key)))
 
-(deftype NodeSeq [meta arr lvl nodes cursors-lengths data-idx data-len ^:mutable __hash]
+(deftype NodeSeq [meta arr lvl nodes cursors data-idx data-len ^:mutable __hash]
   Object
   (toString [coll]
     (pr-str* coll))
@@ -498,7 +498,7 @@
   (-meta [coll] meta)
 
   IWithMeta
-  (-with-meta [coll meta] (NodeSeq. meta arr lvl nodes cursors-lengths data-idx data-len __hash))
+  (-with-meta [coll meta] (NodeSeq. meta arr lvl nodes cursors data-idx data-len __hash))
 
   ICollection
   (-conj [coll o] (cons o coll))
@@ -512,7 +512,7 @@
     [(aget arr (* data-idx 2)) (aget arr (inc (* data-idx 2)))])
 
   (-rest [coll]
-    (create-inode-seq arr lvl nodes cursors-lengths data-idx data-len))
+    (create-inode-seq arr lvl nodes cursors data-idx data-len))
 
   ISeqable
   (-seq [this] this)
@@ -527,25 +527,25 @@
   (-reduce [coll f] (seq-reduce f coll))
   (-reduce [coll f start] (seq-reduce f start coll)))
 
-(defn- create-inode-seq [arr lvl nodes cursors-lengths data-idx data-len]
+(defn- create-inode-seq [arr lvl nodes cursors data-idx data-len]
   (if (< (inc data-idx) data-len)
-    (NodeSeq. nil arr lvl nodes cursors-lengths (inc data-idx) data-len nil)
+    (NodeSeq. nil arr lvl nodes cursors (inc data-idx) data-len nil)
     (let [nodes     (aclone nodes)
-          cursors-lengths (aclone cursors-lengths)]
+          cursors (aclone cursors)]
       (loop [lvl lvl]
         (when (>= lvl 0)
-          (let [node-idx (aget cursors-lengths lvl)]
+          (let [node-idx (aget cursors lvl)]
             (if (zero? node-idx)
               (recur (dec lvl))
               (let [node (.get-node (aget nodes lvl) node-idx)
                     has-nodes ^boolean (.has-nodes? node)
                     new-lvl (if has-nodes (inc lvl) lvl)]
-                (aset cursors-lengths lvl (dec node-idx))
+                (aset cursors lvl (dec node-idx))
                 (when has-nodes
                   (aset nodes new-lvl node)
-                  (aset cursors-lengths new-lvl (.node-arity node)))
+                  (aset cursors new-lvl (.node-arity node)))
                 (if ^boolean (.has-data? node)
-                  (NodeSeq. nil (.get-array node) new-lvl nodes cursors-lengths 0 (.data-arity node) nil)
+                  (NodeSeq. nil (.get-array node) new-lvl nodes cursors 0 (.data-arity node) nil)
                   (recur (inc lvl)))))))))))
 
 (extend-protocol IPrintWithWriter

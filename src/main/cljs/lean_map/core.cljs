@@ -92,10 +92,9 @@
 
   (inode-seq [inode]
     (let [nodes (make-array 7)
-          cursors-lengths (make-array 14)]
+          cursors-lengths #js [0 0 0 0 0 0 0]]
       (aset nodes 0 inode)
-      (aset cursors-lengths 0 0)
-      (aset cursors-lengths 1 (.node-arity inode))
+      (aset cursors-lengths 0 (.node-arity inode))
       (if (zero? datamap)
         (create-inode-seq arr 0 nodes cursors-lengths 0 (.data-arity inode))
         (NodeSeq. nil arr 0 nodes cursors-lengths 0 (.data-arity inode) nil))))
@@ -144,7 +143,7 @@
     (bit-count datamap))
 
   (get-node [_ i]
-    (aget arr (- (alength arr) 1 i)))
+    (aget arr (- (alength arr) i)))
 
   (get-array [_]
     arr)
@@ -535,21 +534,19 @@
           cursors-lengths (aclone cursors-lengths)]
       (loop [lvl lvl]
         (when (>= lvl 0)
-          (let [node-idx (aget cursors-lengths (* lvl 2))
-                node-len (aget cursors-lengths (inc (* lvl 2)))]
-            (if (< node-idx node-len)
+          (let [node-idx (aget cursors-lengths lvl)]
+            (if (zero? node-idx)
+              (recur (dec lvl))
               (let [node (.get-node (aget nodes lvl) node-idx)
                     has-nodes ^boolean (.has-nodes? node)
                     new-lvl (if has-nodes (inc lvl) lvl)]
-                (aset cursors-lengths (* lvl 2) (inc node-idx))
+                (aset cursors-lengths lvl (dec node-idx))
                 (when has-nodes
                   (aset nodes new-lvl node)
-                  (aset cursors-lengths (* new-lvl 2) 0)
-                  (aset cursors-lengths (inc (* new-lvl 2)) (.node-arity node)))
+                  (aset cursors-lengths new-lvl (.node-arity node)))
                 (if ^boolean (.has-data? node)
                   (NodeSeq. nil (.get-array node) new-lvl nodes cursors-lengths 0 (.data-arity node) nil)
-                  (recur (inc lvl))))
-              (recur (dec lvl)))))))))
+                  (recur (inc lvl)))))))))))
 
 (extend-protocol IPrintWithWriter
   NodeSeq

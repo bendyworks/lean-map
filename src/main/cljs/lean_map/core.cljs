@@ -527,11 +527,14 @@
   (-reduce [coll f] (seq-reduce f coll))
   (-reduce [coll f start] (seq-reduce f start coll)))
 
+(defn node-arr-clone [arr]
+  #js[(aget arr 0) (aget arr 1) (aget arr 2) (aget arr 3) (aget arr 4) (aget arr 5) (aget arr 6)])
+
 (defn- create-inode-seq [arr lvl nodes cursors data-idx data-len]
   (if (< data-idx data-len)
     (NodeSeq. nil arr lvl nodes cursors (inc data-idx) data-len nil)
-    (let [nodes     (aclone nodes)
-          cursors (aclone cursors)]
+    (let [nodes     (node-arr-clone nodes)
+          cursors (node-arr-clone cursors)]
       (loop [lvl lvl]
         (when (>= lvl 0)
           (let [node-idx (aget cursors lvl)]

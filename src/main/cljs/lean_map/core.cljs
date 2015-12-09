@@ -96,8 +96,8 @@
       (aset nodes 0 inode)
       (aset cursors-lengths 0 (.node-arity inode))
       (if (zero? datamap)
-        (create-inode-seq arr 0 nodes cursors-lengths 0 (.data-arity inode))
-        (NodeSeq. nil arr 0 nodes cursors-lengths 0 (.data-arity inode) nil))))
+        (create-inode-seq arr 0 nodes cursors-lengths 0 0)
+        (NodeSeq. nil arr 0 nodes cursors-lengths 0 (dec (.data-arity inode)) nil))))
 
   (inode-assoc [inode aedit shift hash key val changed?]
     (let [bit (bitpos hash shift)]
@@ -528,7 +528,7 @@
   (-reduce [coll f start] (seq-reduce f start coll)))
 
 (defn- create-inode-seq [arr lvl nodes cursors data-idx data-len]
-  (if (< (inc data-idx) data-len)
+  (if (< data-idx data-len)
     (NodeSeq. nil arr lvl nodes cursors (inc data-idx) data-len nil)
     (let [nodes     (aclone nodes)
           cursors (aclone cursors)]
@@ -545,7 +545,7 @@
                   (aset nodes new-lvl node)
                   (aset cursors new-lvl (.node-arity node)))
                 (if ^boolean (.has-data? node)
-                  (NodeSeq. nil (.get-array node) new-lvl nodes cursors 0 (.data-arity node) nil)
+                  (NodeSeq. nil (.get-array node) new-lvl nodes cursors 0 (dec (.data-arity node)) nil)
                   (recur (inc lvl)))))))))))
 
 (extend-protocol IPrintWithWriter

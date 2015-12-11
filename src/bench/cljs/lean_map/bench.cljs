@@ -64,7 +64,7 @@
   (let [maps [small-map medium-map large-map]
         samples [small-map-sample medium-map-sample large-map-sample]]
     (doseq [[m sample] (partition 2 (interleave maps samples))]
-      (simple-benchmark [] (hash-unordered-coll m) sample))))
+      (simple-benchmark [] (hash (clone m)) sample))))
 
 (defmethod map-bench :equals [_ _ {:keys [small-map medium-map large-map]}]
   (println "Equals")

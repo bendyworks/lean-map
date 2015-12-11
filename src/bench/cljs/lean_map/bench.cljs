@@ -71,7 +71,11 @@
   (let [maps [small-map medium-map large-map]
         samples [small-map-sample medium-map-sample large-map-sample]]
     (doseq [[m sample] (partition 2 (interleave maps samples))]
-      (let [cm (clone m)]
+      (let [step (/ (count m) 20)
+            cm   (loop [cm m i 0]
+                   (if (< i 20)
+                     (recur (assoc (dissoc cm (get test-keys i)) (get test-keys i) i) (+ i step))
+                     cm))]
         (simple-benchmark [] (= m cm) sample)))))
 
 (defmethod map-bench :equals-fail [_ _ {:keys [small-map medium-map large-map]}]
@@ -79,7 +83,8 @@
   (let [maps [small-map medium-map large-map]
         samples [small-map-sample medium-map-sample large-map-sample]]
     (doseq [[m sample] (partition 2 (interleave maps samples))]
-      (let [neq-m (assoc m (js-obj) 0)]
+      (let [step (/ (count m) 20)
+            neq-m (assoc m (get test-keys step) -100)]
         (simple-benchmark [] (= m neq-m) sample)))))
 
 (defmethod map-bench :sequence [_ _ {:keys [small-map medium-map large-map]}]

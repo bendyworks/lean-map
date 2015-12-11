@@ -227,7 +227,19 @@
               (.copy-and-set-node inode wedit bit sub-node-new))
             inode))
         :else
-        inode))))
+        inode)))
+
+  IEquiv
+  (-equiv [inode other]
+    (if (identical? inode other)
+      true
+      (when (instance? BitmapIndexedNode other)
+        (when (and (== datamap (.-datamap other)) (== nodemap (.-nodemap other)))
+          (let [len (alength arr)]
+            (loop [i 0 eq true]
+              (if (and eq (< i len))
+                (recur (inc i) (= (aget arr i) (aget (.-arr other)i)))
+                eq))))))))
 
 (set! (.-EMPTY BitmapIndexedNode) (BitmapIndexedNode. nil 0 0 (make-array 0)))
 
@@ -302,7 +314,19 @@
     (inode-kv-reduce arr cnt 0 f init))
 
   (single-kv? [_]
-    false))
+    false)
+
+  IEquiv
+  (-equiv [inode other]
+    (if (identical? inode other)
+      true
+      (when (instance? HashCollisionNode other)
+        (when (== cnt (.-cnt other))
+          (let [len (alength arr)]
+            (loop [i 0 eq true]
+              (if (and eq (< i len))
+                (recur (inc i) (= (aget arr i) (aget (.-arr other)i)))
+                eq))))))))
 
 (deftype PersistentHashMap [meta cnt root ^:mutable __hash]
   Object
@@ -353,7 +377,12 @@
   (-empty [coll] (-with-meta (.-EMPTY PersistentHashMap) meta))
 
   IEquiv
-  (-equiv [coll other] (equiv-map coll other))
+  (-equiv [coll other]
+    (if (identical? coll other)
+      true
+      (if (instance? PersistentHashMap other)
+       (-equiv root (.-root other))
+       (equiv-map coll other))))
 
   IHash
   (-hash [coll] (caching-hash coll hash-unordered-coll __hash))

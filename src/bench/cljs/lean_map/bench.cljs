@@ -87,6 +87,14 @@
             neq-m (assoc m (get test-keys step) -100)]
         (simple-benchmark [] (= m neq-m) sample)))))
 
+(defmethod map-bench :worst-equals [_ _ {:keys [small-map medium-map large-map]}]
+  (println "Worst Case Equals (same map different location in memory)")
+  (let [maps [small-map medium-map large-map]
+        samples [small-map-sample medium-map-sample large-map-sample]]
+    (doseq [[m sample] (partition 2 (interleave maps samples))]
+      (let [cm (into (empty m) m)]
+        (simple-benchmark [] (= m cm) sample)))))
+
 (defmethod map-bench :sequence [_ _ {:keys [small-map medium-map large-map]}]
   (println "sequence")
   (let [maps [small-map medium-map large-map]
@@ -121,7 +129,7 @@
                      (range large-map-size)))
 
 (println "Current Maps")
-(let [benchmarks  [:assoc :dissoc :dissoc-fail :hash :equals :equals-fail :sequence :reduce]
+(let [benchmarks  [:assoc :dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
       empty-map cem
       data {:small-map (sized-map empty-map small-map-size)
             :medium-map (sized-map empty-map medium-map-size)
@@ -129,7 +137,7 @@
   (run-benchmarks benchmarks empty-map data))
 
 (println "Lean Maps")
-(let [benchmarks  [:assoc :dissoc :dissoc-fail :hash :equals :equals-fail :sequence :reduce]
+(let [benchmarks  [:assoc :dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
       empty-map lem
       data {:small-map (sized-map empty-map small-map-size)
             :medium-map (sized-map empty-map medium-map-size)

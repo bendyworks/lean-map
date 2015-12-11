@@ -229,6 +229,18 @@
         :else
         inode)))
 
+  (hash-node [_ hash-code]
+    (let [data-len (* (bit-count datamap) 2)
+          len (alength arr)
+          node-start (if (zero? datamap) 0 data-len)]
+      (loop [d 0 hash-code hash-code]
+        (if (< d data-len)
+          (recur (+ d 2) (bit-or (+ hash-code (hash [(aget arr d) (aget arr (inc d))])) 0))
+          (loop [n node-start hash-code hash-code]
+            (if (< n len)
+              (recur (inc n) (.hash-node (aget arr n) hash-code))
+              hash-code))))))
+
   IEquiv
   (-equiv [inode other]
     (if (identical? inode other)
@@ -331,6 +343,13 @@
   (single-kv? [_]
     false)
 
+  (hash-node [_ hash-code]
+    (let [len (alength arr)]
+      (loop [n 0 hash-code hash-code]
+        (if (< n len)
+          (recur (+ n 2) (bit-or (+ hash-code (hash [(aget arr n) (aget arr (inc n))])) 0))
+          hash-code))))
+
   IEquiv
   (-equiv [inode other]
     (if (identical? inode other)
@@ -346,6 +365,9 @@
                   (recur (+ i 2)
                          (and (> idx -1) (= (aget arr (inc i)) (aget other-arr (inc idx))))))
                 eq))))))))
+
+(defn- persistent-map-hash [m]
+  (mix-collection-hash (if (zero? (.-cnt m)) 0 (.hash-node (.-root m) 0)) (.-cnt m)))
 
 (deftype PersistentHashMap [meta cnt root ^:mutable __hash]
   Object
@@ -404,7 +426,8 @@
        (equiv-map coll other))))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
+  (-hash [coll]
+    (caching-hash coll persistent-map-hash __hash))
 
   ILookup
   (-lookup [coll k]

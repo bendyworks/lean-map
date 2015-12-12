@@ -44,6 +44,10 @@
                 (recur (inc i) init)))
             :else init))))
 
+(defn- ^number hash-kv [key value]
+  (let [key-hash-code (bit-or (+ 31 (hash key)) 0)]
+    (mix-collection-hash (bit-or (+ (imul 31 key-hash-code) (hash value)) 0) 2)))
+
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object
   (copy-and-set-node [inode e bit node]
@@ -235,7 +239,7 @@
           node-start (if (zero? datamap) 0 data-len)]
       (loop [d 0 hash-code hash-code]
         (if (< d data-len)
-          (recur (+ d 2) (bit-or (+ hash-code (hash [(aget arr d) (aget arr (inc d))])) 0))
+          (recur (+ d 2) (bit-or (+ hash-code (hash-kv (aget arr d) (aget arr (inc d)))) 0))
           (loop [n node-start hash-code hash-code]
             (if (< n len)
               (recur (inc n) (.hash-node (aget arr n) hash-code))

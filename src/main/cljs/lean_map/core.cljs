@@ -248,20 +248,42 @@
                             ^:mutable cnt
                             ^:mutable arr]
   Object
-  (inode-assoc [inode hedit shift hash key val added-leaf?]
+  (persistent-inode-assoc [inode idx hedit key val changed?]
+    (if (== idx -1)
+      (let [len     (* 2 cnt)
+            new-arr (make-array (+ len 2))]
+        (array-copy arr 0 new-arr 0 len)
+        (aset new-arr len key)
+        (aset new-arr (inc len) val)
+        (set! (.-added changed?) true)
+        (set! (.-modified changed?) true)
+        (HashCollisionNode. hedit collision-hash (inc cnt) new-arr))
+      (if (= (aget arr idx) val)
+        inode
+        (do
+          (set! (.-modified changed?) true)
+          (HashCollisionNode. hedit collision-hash cnt (clone-and-set arr (inc idx) val))))))
+
+  (mutable-inode-assoc [inode idx key val changed?]
+    (if (== idx -1)
+      (let [new-arr (make-array (* 2 (inc cnt)))]
+        (array-copy arr 0 new-arr 0 (* 2 cnt))
+        (aset arr (* 2 cnt) key)
+        (aset arr (inc (* 2 cnt)) val)
+        (set! (.-added changed?) true)
+        (set! (.-modified changed?) true)
+        (set! cnt (inc cnt)))
+      (when-not (identical? (aget arr (inc idx)) val)
+        (set! (.-modified changed?) true)
+        (aset arr (inc idx) val)))
+    inode)
+
+  (inode-assoc [inode hedit _ hash key val changed?]
     (assert (== hash collision-hash))
     (let [idx (hash-collision-node-find-index arr cnt key)]
-      (if (== idx -1)
-        (let [len     (* 2 cnt)
-              new-arr (make-array (+ len 2))]
-          (array-copy arr 0 new-arr 0 len)
-          (aset new-arr len key)
-          (aset new-arr (inc len) val)
-          (set! (.-val added-leaf?) true)
-          (HashCollisionNode. nil collision-hash (inc cnt) new-arr))
-        (if (= (aget arr idx) val)
-          inode
-          (HashCollisionNode. nil collision-hash cnt (clone-and-set arr (inc idx) val))))))
+      (if ^boolean (can-edit edit hedit)
+        (.mutable-inode-assoc inode idx key val changed?)
+        (.persistent-inode-assoc inode idx hedit key val changed?))))
 
   (has-nodes? [_]
     false)

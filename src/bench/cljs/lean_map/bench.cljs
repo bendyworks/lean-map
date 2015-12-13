@@ -102,9 +102,9 @@
     (doseq [[m sample] (partition 2 (interleave maps samples))]
       (simple-benchmark
         []
-        (loop [s (seq m)]
+        (loop [s (seq m) sum 0]
           (if (seq s)
-            (recur (next s))))
+            (recur (rest s) (+ sum (nth (first s) 1)))))
         sample))))
 
 (defmethod map-bench :reduce [_ _ {:keys [small-map medium-map large-map]}]

@@ -78,7 +78,7 @@
 
   (merge-two-kv-pairs [inode medit shift key1 val1 key2hash key2 val2]
     (let [key1hash (hash key1)]
-      (if (and (< shift 32) (== key1hash key2hash))
+      (if (and (< 32 shift) (== key1hash key2hash))
         (HashCollisionNode. medit key1hash 2 (array key1 val1 key2 val2))
         (let [mask1 (mask key1hash shift)
               mask2 (mask key2hash shift)]

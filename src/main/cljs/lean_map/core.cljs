@@ -322,15 +322,8 @@
         (do
           (set! (.-modified changed?) true)
           (case cnt
-           1 (.-EMPTY BitmapIndexedNode)
-           2 (.inode_assoc (.-EMPTY BitmapIndexedNode) wedit shift hash
-                            (aget arr idx) (aget arr (inc idx))
-                            changed?)
-           (let [i (quot idx 2)
-                 new-arr (make-array (- (alength arr) 2))]
-             (array-copy arr 0 new-arr 0 (* 2 i))
-             (array-copy arr (* 2 (inc i)) new-arr (* 2 i) (- (alength new-arr) (* 2 i)))
-             (HashCollisionNode. wedit hash (dec cnt) new-arr)))))))
+            1 (.-EMPTY BitmapIndexedNode)
+            (HashCollisionNode. wedit collision-hash (dec cnt) (remove-pair arr (quot idx 2))))))))
 
   (kv-reduce [inode f init]
     (inode-kv-reduce arr cnt 0 f init))

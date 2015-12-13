@@ -337,10 +337,14 @@
       true
       (when (instance? HashCollisionNode other)
         (when (== cnt (.-cnt other))
-          (let [len (alength arr)]
+          (let [len (alength arr)
+                other-arr (.-arr other)]
             (loop [i 0 eq true]
+              ;(println i eq (hash-collision-node-find-index (.-arr other) cnt (aget arr i)) arr (.-arr other))
               (if (and eq (< i len))
-                (recur (inc i) (= (aget arr i) (aget (.-arr other)i)))
+                (let [idx (hash-collision-node-find-index other-arr cnt (aget arr i))]
+                  (recur (+ i 2)
+                         (and (> idx -1) (= (aget arr (inc i)) (aget other-arr (inc idx))))))
                 eq))))))))
 
 (deftype PersistentHashMap [meta cnt root ^:mutable __hash]

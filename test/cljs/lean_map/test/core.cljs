@@ -1,25 +1,22 @@
 (ns cljs.lean-map.test.core
   (:require
-    [cljs.test :refer-macros [deftest]]
-    [collection-check.core :as cc]
-    [clojure.test.check.generators :as gen]
-    [cljs.lean-map.core :as lean-map.core]))
+    [cljs.lean-map.test.shared :as shared]
+    [cljs.test :refer-macros [deftest is]]
+    [clojure.test.check.generators :as gen]))
 
-(defrecord BadHashNumber [num])
+(def hash-collision-map
+  (assoc shared/empty 0 0 1 1 (shared/BadHashNumber. 2) 2 3 3 (shared/BadHashNumber. 4) 4))
 
-(extend-protocol IHash
-  BadHashNumber
-  (-hash [_]
-    1))
+(def hash-collision-map-same
+  (assoc shared/empty (shared/BadHashNumber. 2) 2 (shared/BadHashNumber. 4) 4 3 3 0 0 1 1))
 
-(def gen-bad-hash
-  (gen/fmap (partial apply ->BadHashNumber) (gen/tuple gen/int)))
+(def hash-collision-map-different-key
+  (assoc shared/empty 0 0 1 1 (shared/BadHashNumber. 8) 2 3 3 (shared/BadHashNumber. 4) 4))
 
-(def gen-key
-  (gen/tuple (gen/frequency [[9 gen/int] [1 gen-bad-hash]])))
+(def hash-collision-map-different-value
+  (assoc shared/empty 0 0 1 1 (shared/BadHashNumber. 2) 8 3 3 (shared/BadHashNumber. 4) 4))
 
-(def gen-value
-  (gen/tuple gen/int))
-
-(deftest assert-lean-map-core-map-like
-  (cc/assert-map-like 100 (.-EMPTY lean-map.core/PersistentHashMap) gen-key gen-value))
+(deftest equal-hash-collision-maps
+  (is (= hash-collision-map hash-collision-map-same))
+  (is (not= hash-collision-map hash-collision-map-different-key))
+  (is (not= hash-collision-map hash-collision-map-different-value)))

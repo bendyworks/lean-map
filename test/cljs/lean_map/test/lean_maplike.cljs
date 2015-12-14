@@ -5,4 +5,4 @@
     [collection-check.core :as cc]))
 
 (deftest assert-lean-map-core-map-like-for-lean-map
-  (cc/assert-map-like 100 shared/empty shared/gen-key shared/gen-value {:base shared/empty}))
+  (cc/assert-map-like 100 shared/mempty shared/gen-key shared/gen-value {:base shared/mempty}))

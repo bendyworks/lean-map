@@ -5,16 +5,16 @@
     [clojure.test.check.generators :as gen]))
 
 (def hash-collision-map
-  (assoc shared/empty 0 0 1 1 (shared/BadHashNumber. 2) 2 3 3 (shared/BadHashNumber. 4) 4))
+  (assoc shared/mempty 0 0 1 1 (shared/BadHashNumber. 2) 2 3 3 (shared/BadHashNumber. 4) 4))
 
 (def hash-collision-map-same
-  (assoc shared/empty (shared/BadHashNumber. 2) 2 (shared/BadHashNumber. 4) 4 3 3 0 0 1 1))
+  (assoc shared/mempty (shared/BadHashNumber. 2) 2 (shared/BadHashNumber. 4) 4 3 3 0 0 1 1))
 
 (def hash-collision-map-different-key
-  (assoc shared/empty 0 0 1 1 (shared/BadHashNumber. 8) 2 3 3 (shared/BadHashNumber. 4) 4))
+  (assoc shared/mempty 0 0 1 1 (shared/BadHashNumber. 8) 2 3 3 (shared/BadHashNumber. 4) 4))
 
 (def hash-collision-map-different-value
-  (assoc shared/empty 0 0 1 1 (shared/BadHashNumber. 2) 8 3 3 (shared/BadHashNumber. 4) 4))
+  (assoc shared/mempty 0 0 1 1 (shared/BadHashNumber. 2) 8 3 3 (shared/BadHashNumber. 4) 4))
 
 (deftest equal-hash-collision-maps
   (is (= hash-collision-map hash-collision-map-same))

@@ -363,7 +363,6 @@
           (let [len (alength arr)
                 other-arr (.-arr other)]
             (loop [i 0 eq true]
-              ;(println i eq (hash-collision-node-find-index (.-arr other) cnt (aget arr i)) arr (.-arr other))
               (if (and eq (< i len))
                 (let [idx (hash-collision-node-find-index other-arr cnt (aget arr i))]
                   (recur (+ i 2)

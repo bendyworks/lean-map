@@ -4,7 +4,7 @@
     [cljs.lean-map.core :as lm]
     [clojure.test.check.generators :as gen]))
 
-(def empty (.-EMPTY lm/PersistentHashMap))
+(def mempty (.-EMPTY lm/PersistentHashMap))
 
 (defrecord BadHashNumber [num])
 

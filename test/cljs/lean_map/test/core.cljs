@@ -20,3 +20,8 @@
   (is (= hash-collision-map hash-collision-map-same))
   (is (not= hash-collision-map hash-collision-map-different-key))
   (is (not= hash-collision-map hash-collision-map-different-value)))
+
+(deftest equal-hash-collision-map-hashes
+  (is (== (hash hash-collision-map) (hash hash-collision-map-same)))
+  (is (== (hash hash-collision-map) (hash hash-collision-map-different-key)))
+  (is (not= (hash hash-collision-map) (hash hash-collision-map-different-value))))

@@ -338,14 +338,18 @@
         (do
           (set! (.-modified changed?) true)
           (case cnt
-            1 (.-EMPTY BitmapIndexedNode)
+            1
+            (.-EMPTY BitmapIndexedNode)
+            2
+            (let [idx (if (key-test key (aget arr 0)) 2 0)]
+              (.inode-assoc (.-EMPTY BitmapIndexedNode) wedit 0 hash (aget arr idx) (aget arr (inc idx)) changed?))
             (HashCollisionNode. wedit collision-hash (dec cnt) (remove-pair arr (quot idx 2))))))))
 
   (kv-reduce [inode f init]
     (inode-kv-reduce arr cnt 0 f init))
 
   (single-kv? [_]
-    false)
+    (== 1 cnt))
 
   (hash-node [_ hash-code]
     (let [len (alength arr)]

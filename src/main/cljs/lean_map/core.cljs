@@ -497,7 +497,7 @@
       (not (nil? root)) (.kv-reduce root f init)
       :else                    init)))
 
-(set! (.-EMPTY PersistentHashMap) (PersistentHashMap. nil 0 nil empty-unordered-hash))
+(set! (.-EMPTY PersistentHashMap) (PersistentHashMap. nil 0 (.-EMPTY BitmapIndexedNode) empty-unordered-hash))
 
 (deftype TransientHashMap [^:mutable ^boolean edit
                            ^:mutable root

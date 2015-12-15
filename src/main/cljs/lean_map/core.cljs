@@ -297,8 +297,10 @@
   (inode-assoc [inode hedit _ hash key val changed?]
     (assert (== hash collision-hash))
     (let [idx (hash-collision-node-find-index arr cnt key)]
-      (if ^boolean (can-edit edit hedit)
-        (.mutable-inode-assoc inode idx key val changed?)
+      (if ^boolean hedit
+        (if ^boolean (can-edit edit hedit)
+         (.mutable-inode-assoc inode idx key val changed?)
+         (.mutable-inode-assoc (HashCollisionNode. hedit hash cnt (aclone arr)) idx key val changed?))
         (.persistent-inode-assoc inode idx hedit key val changed?))))
 
   (has-nodes? [_]

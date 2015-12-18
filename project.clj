@@ -6,6 +6,8 @@
 
   :clean-targets ^{:protect false} ["resources/out"]
 
+  :source-paths  ["src/main"]
+
   :jvm-opts ^:replace ["-Xms512m" "-Xmx512m" "-server"]
 
   :dependencies [[org.clojure/clojure "1.7.0"]

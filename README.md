@@ -33,7 +33,7 @@ All standard ClojureScript map functionality (`assoc`, `dissoc`, `get`, `seq`, `
 Here are the performance gains over the reference ClojureScript HAMT implementation
 
 * 2x for scanning over sequences (except in Firefox which has a 2x slowdown)
-* 2 - 4x for ashing maps
+* 2 - 4x for hashing maps
 * One order of magnitude for equality checking in the worst case (no structural sharing) and two orders of magnitude in the best case (structural sharing)
 
 The other operations are comparable to ~25% slower then the reference implementation.

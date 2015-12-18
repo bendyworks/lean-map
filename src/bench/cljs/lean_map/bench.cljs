@@ -27,6 +27,12 @@
       (recur (assoc m (get test-keys i) i) (inc i))
       m)))
 
+(defn transient-sized-map [m n]
+  (loop [m (transient m) i 0]
+    (if (< i n)
+      (recur (assoc! m (get test-keys i) i) (inc i))
+      (persistent! m))))
+
 (defmulti map-bench
   (fn [benchmark _ _] benchmark))
 
@@ -34,6 +40,11 @@
   (println "Assoc")
   (doseq [[size sample] size->sample]
     (simple-benchmark [] (sized-map m size) sample)))
+
+(defmethod map-bench :transient-assoc [_ m _]
+  (println "Transient Assoc")
+  (doseq [[size sample] size->sample]
+    (simple-benchmark [] (transient-sized-map m size) sample)))
 
 (defmethod map-bench :dissoc [_ _ {:keys [small-map medium-map large-map]}]
   (println "Dissoc")
@@ -46,6 +57,18 @@
          (when (> i 0)
            (recur (dissoc m (get test-keys i)) (dec i))))
        sample))))
+
+(defmethod map-bench :transient-dissoc [_ _ {:keys [small-map medium-map large-map]}]
+  (println "Transient Dissoc")
+  (let [maps [small-map medium-map large-map]
+        samples [small-map-sample medium-map-sample large-map-sample]]
+    (doseq [[m sample] (partition 2 (interleave maps samples))]
+      (simple-benchmark
+        []
+        (loop [m (transient m) i (count m)]
+          (when (> i 0)
+            (recur (dissoc! m (get test-keys i)) (dec i))))
+        sample))))
 
 (defmethod map-bench :dissoc-fail [_ _ {:keys [small-map medium-map large-map]}]
   (println "Dissoc Fail")
@@ -129,7 +152,7 @@
                      (range large-map-size)))
 
 (println "Current Maps")
-(let [benchmarks  [:assoc :dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
+(let [benchmarks  [:assoc :transient-assoc :dissoc :transient-dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
       empty-map cem
       data {:small-map (sized-map empty-map small-map-size)
             :medium-map (sized-map empty-map medium-map-size)
@@ -137,7 +160,7 @@
   (run-benchmarks benchmarks empty-map data))
 
 (println "Lean Maps")
-(let [benchmarks  [:assoc :dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
+(let [benchmarks  [:assoc :transient-assoc :dissoc :transient-dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
       empty-map lem
       data {:small-map (sized-map empty-map small-map-size)
             :medium-map (sized-map empty-map medium-map-size)

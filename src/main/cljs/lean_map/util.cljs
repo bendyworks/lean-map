@@ -61,28 +61,33 @@
       (recur (nnext in) (assoc! out (first in) (second in)))
       (persistent! out))))
 
-(defn set-maps-to-lean-map! []
+(defn set-maps-to-lean-map!
   "Makes Persistent and Transient ArrayMaps convert to Lean Maps at the HashMap threshold
   (current 8 key value pairs)"
+  []
   (set! (.-cljs$core$IAssociative$_assoc$arity$3 (.-prototype PersistentArrayMap)) lean-persistent-assoc)
   (set! (.-cljs$core$ITransientAssociative$_assoc_BANG_$arity$3 (.-prototype TransientArrayMap)) lean-transient-assoc)
   (reset! use-lean-map true))
 
-(defn set-maps-to-cljs-map! []
+(defn set-maps-to-cljs-map!
   "Makes Persistent and Transient ArrayMaps convert to CLJS Maps at the HashMap threshold
   (current 8 key value pairs)"
+  []
   (set! (.-cljs$core$IAssociative$_assoc$arity$3 (.-prototype PersistentArrayMap)) cljs-persistent-assoc)
   (set! (.-cljs$core$ITransientAssociative$_assoc_BANG_$arity$3 (.-prototype TransientArrayMap)) cljs-transient-assoc)
   (reset! use-lean-map false))
 
-(defn using-lean-maps? []
+(defn using-lean-maps?
   "Is ClojureScript currently using Lean Maps or the default CLJS Map implementation"
+  []
   @use-lean-map)
 
-(defn lean-map? [m]
+(defn lean-map?
   "Check if a map is an instance of lean-map"
+  [m]
   (or (instance? c/PersistentHashMap m) (instance? c/TransientHashMap m)))
 
-(defn lean-map-seq? [s]
+(defn lean-map-seq?
   "Checks if a map is an instance of the lean-map seq"
+  [s]
   (instance? c/NodeSeq s))

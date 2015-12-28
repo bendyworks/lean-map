@@ -464,10 +464,7 @@
   IAssociative
   (-assoc [coll k v]
     (let [changed? (Box. false false)
-          new-root    (-> (if (nil? root)
-                            (.-EMPTY BitmapIndexedNode)
-                            root)
-                          (.inode-assoc nil 0 (hash k) k v changed?))]
+          new-root (.inode-assoc root nil 0 (hash k) k v changed?)]
       (if (identical? new-root root)
         coll
         (PersistentHashMap. meta (if ^boolean (.-added changed?) (inc cnt) cnt) new-root  nil))))
@@ -517,10 +514,7 @@
   (assoc! [tcoll k v]
     (if edit
       (let [changed? (Box. false false)
-            node        (-> (if (nil? root)
-                              (.-EMPTY BitmapIndexedNode)
-                              root)
-                            (.inode-assoc edit 0 (hash k) k v changed?))]
+            node (.inode-assoc root edit 0 (hash k) k v changed?)]
         (if (identical? node root)
           nil
           (set! root node))

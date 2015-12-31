@@ -9,7 +9,7 @@
 
 (declare NodeSeq HashCollisionNode TransientHashMap PersistentHashMap)
 
-(deftype Box [^:mutable added ^:mutable modified])
+(deftype Box [^:mutable val])
 
 (declare create-inode-seq create-array-node-seq create-node)
 
@@ -103,25 +103,24 @@
         (create-inode-seq arr 0 nodes cursors-lengths 0 0)
         (NodeSeq. nil arr 0 nodes cursors-lengths 0 (dec (.data-arity inode)) nil))))
 
-  (inode-assoc [inode aedit shift hash key val changed?]
+  (inode-assoc [inode aedit shift hash key val added-leaf?]
     (let [bit (bitpos hash shift)]
       (cond
         (not (zero? (bit-and datamap bit)))
         (let [idx (bitmap-indexed-node-index datamap bit)
               k (aget arr (* 2 idx))]
-          (set! (.-modified changed?) true)
           (if (key-test k key)
             (.copy-and-set-value inode aedit bit val)
             (let [v (aget arr (inc (* 2 idx)))
                   new-node (.merge-two-kv-pairs inode aedit (+ shift 5) k v hash key val)]
-              (set! (.-added changed?) true)
+              (set! (.-val added-leaf?) true)
               (.copy-and-migrate-to-node inode aedit bit new-node))))
         (not (zero? (bit-and nodemap bit)))
         (let [sub-node (aget arr (node-at arr nodemap bit))
-              sub-node-new (.inode-assoc sub-node aedit (+ shift 5) hash key val changed?)]
-          (if ^boolean (.-modified changed?)
-            (.copy-and-set-node inode aedit bit sub-node-new)
-            inode))
+              sub-node-new (.inode-assoc sub-node aedit (+ shift 5) hash key val added-leaf?)]
+          (if (identical? sub-node sub-node-new)
+            inode
+            (.copy-and-set-node inode aedit bit sub-node-new)))
         :else
         (let [n (alength arr)
               idx (* 2 (bitmap-indexed-node-index datamap bit))
@@ -130,8 +129,7 @@
           (aset new-arr idx key)
           (aset new-arr (inc idx) val)
           (array-copy arr idx new-arr (+ 2 idx) (- n idx))
-          (set! (.-added changed?) true)
-          (set! (.-modified changed?) true)
+          (set! (.-val added-leaf?) true)
           (BitmapIndexedNode. aedit (bit-or datamap bit) nodemap new-arr)))))
 
   (has-nodes? [_]
@@ -205,14 +203,14 @@
   (single-kv? [_]
     (and (zero? nodemap) (== 1 (bit-count datamap))))
 
-  (inode-without [inode wedit shift hash key changed?]
+  (inode-without [inode wedit shift hash key removed-leaf?]
     (let [bit (bitpos hash shift)]
       (cond
         (not (zero? (bit-and datamap bit)))
         (let [idx (bitmap-indexed-node-index datamap bit)]
           (if (key-test key (aget arr (* 2 idx)))
             (do
-              (set! (.-modified changed?) true)
+              (set! (.-val removed-leaf?) true)
               (if (and (== 2 (bit-count datamap)) (zero? nodemap))
                (let [new-datamap (if (zero? shift) (bit-xor datamap bit) (bitpos hash 0))]
                  (if (zero? idx)
@@ -222,14 +220,14 @@
             inode))
         (not (zero? (bit-and nodemap bit)))
         (let [sub-node (aget arr (node-at arr nodemap bit))
-              sub-node-new (.inode-without sub-node wedit (+ shift 5) hash key changed?)]
-          (if ^boolean (.-modified changed?)
+              sub-node-new (.inode-without sub-node wedit (+ shift 5) hash key removed-leaf?)]
+          (if (identical? sub-node sub-node-new)
+            inode
             (if ^boolean (.single-kv? sub-node-new)
               (if (and (zero? datamap) (== 1 (bit-count nodemap)))
                 sub-node-new
                 (.copy-and-migrate-to-inline inode wedit bit sub-node-new))
-              (.copy-and-set-node inode wedit bit sub-node-new))
-            inode))
+              (.copy-and-set-node inode wedit bit sub-node-new))))
         :else
         inode)))
 
@@ -264,44 +262,39 @@
                             ^:mutable cnt
                             ^:mutable arr]
   Object
-  (persistent-inode-assoc [inode idx hedit key val changed?]
+  (persistent-inode-assoc [inode idx hedit key val added-leaf?]
     (if (== idx -1)
       (let [len     (* 2 cnt)
             new-arr (make-array (+ len 2))]
         (array-copy arr 0 new-arr 0 len)
         (aset new-arr len key)
         (aset new-arr (inc len) val)
-        (set! (.-added changed?) true)
-        (set! (.-modified changed?) true)
+        (set! (.-val added-leaf?) true)
         (HashCollisionNode. hedit collision-hash (inc cnt) new-arr))
       (if (= (aget arr idx) val)
         inode
-        (do
-          (set! (.-modified changed?) true)
-          (HashCollisionNode. hedit collision-hash cnt (clone-and-set arr (inc idx) val))))))
+        (HashCollisionNode. hedit collision-hash cnt (clone-and-set arr (inc idx) val)))))
 
-  (mutable-inode-assoc [inode idx key val changed?]
+  (mutable-inode-assoc [inode idx key val added-leaf?]
     (if (== idx -1)
       (let [new-arr (make-array (* 2 (inc cnt)))]
         (array-copy arr 0 new-arr 0 (* 2 cnt))
         (aset arr (* 2 cnt) key)
         (aset arr (inc (* 2 cnt)) val)
-        (set! (.-added changed?) true)
-        (set! (.-modified changed?) true)
+        (set! (.-val added-leaf?) true)
         (set! cnt (inc cnt)))
       (when-not (identical? (aget arr (inc idx)) val)
-        (set! (.-modified changed?) true)
         (aset arr (inc idx) val)))
     inode)
 
-  (inode-assoc [inode hedit _ hash key val changed?]
+  (inode-assoc [inode hedit _ hash key val added-leaf?]
     (assert (== hash collision-hash))
     (let [idx (hash-collision-node-find-index arr cnt key)]
       (if ^boolean hedit
         (if ^boolean (can-edit edit hedit)
-         (.mutable-inode-assoc inode idx key val changed?)
-         (.mutable-inode-assoc (HashCollisionNode. hedit hash cnt (aclone arr)) idx key val changed?))
-        (.persistent-inode-assoc inode idx hedit key val changed?))))
+         (.mutable-inode-assoc inode idx key val added-leaf?)
+         (.mutable-inode-assoc (HashCollisionNode. hedit hash cnt (aclone arr)) idx key val added-leaf?))
+        (.persistent-inode-assoc inode idx hedit key val added-leaf?))))
 
   (has-nodes? [_]
     false)
@@ -333,18 +326,18 @@
             (key-test key (aget arr idx)) [(aget arr idx) (aget arr (inc idx))]
             :else                  not-found)))
 
-  (inode-without [inode wedit shift hash key changed?]
+  (inode-without [inode wedit shift hash key removed-leaf?]
     (let [idx (hash-collision-node-find-index arr cnt key)]
       (if (== idx -1)
         inode
         (do
-          (set! (.-modified changed?) true)
+          (set! (.-val removed-leaf?) true)
           (case cnt
             1
             (.-EMPTY BitmapIndexedNode)
             2
             (let [idx (if (key-test key (aget arr 0)) 2 0)]
-              (.inode-assoc (.-EMPTY BitmapIndexedNode) wedit 0 hash (aget arr idx) (aget arr (inc idx)) changed?))
+              (.inode-assoc (.-EMPTY BitmapIndexedNode) wedit 0 hash (aget arr idx) (aget arr (inc idx)) removed-leaf?))
             (HashCollisionNode. wedit collision-hash (dec cnt) (remove-pair arr (quot idx 2))))))))
 
   (kv-reduce [inode f init]
@@ -463,11 +456,11 @@
 
   IAssociative
   (-assoc [coll k v]
-    (let [changed? (Box. false false)
-          new-root (.inode-assoc root nil 0 (hash k) k v changed?)]
+    (let [added-leaf? (Box. false)
+          new-root (.inode-assoc root nil 0 (hash k) k v added-leaf?)]
       (if (identical? new-root root)
         coll
-        (PersistentHashMap. meta (if ^boolean (.-added changed?) (inc cnt) cnt) new-root  nil))))
+        (PersistentHashMap. meta (if ^boolean (.-val added-leaf?) (inc cnt) cnt) new-root  nil))))
 
   (-contains-key? [coll k]
     (if (nil? root)
@@ -482,7 +475,7 @@
   (-dissoc [coll k]
     (if (nil? root)
       coll
-      (let [new-root (.inode-without root nil 0 (hash k) k (Box. false false))]
+      (let [new-root (.inode-without root nil 0 (hash k) k (Box. false))]
         (if (identical? new-root root)
           coll
           (PersistentHashMap. meta (dec cnt) new-root nil)))))
@@ -513,12 +506,12 @@
 
   (assoc! [tcoll k v]
     (if edit
-      (let [changed? (Box. false false)
-            node (.inode-assoc root edit 0 (hash k) k v changed?)]
+      (let [added-leaf? (Box. false)
+            node (.inode-assoc root edit 0 (hash k) k v added-leaf?)]
         (if (identical? node root)
           nil
           (set! root node))
-        (if ^boolean (.-added changed?)
+        (if ^boolean (.-val added-leaf?)
           (set! count (inc count)))
         tcoll)
       (throw (js/Error. "assoc! after persistent!"))))
@@ -527,12 +520,12 @@
     (if edit
       (if (nil? root)
         tcoll
-        (let [removed-leaf? (Box. false false)
+        (let [removed-leaf? (Box. false)
               node (.inode-without root edit 0 (hash k) k removed-leaf?)]
           (if (identical? node root)
             nil
             (set! root node))
-          (if ^boolean (.-modified removed-leaf?)
+          (if ^boolean (.-val removed-leaf?)
             (set! count (dec count)))
           tcoll))
       (throw (js/Error. "dissoc! after persistent!"))))

@@ -22,9 +22,6 @@
 (defn- bitpos [hash shift]
   (bit-shift-left 1 (mask hash shift)))
 
-(defn- node-at [arr nodemap bit]
-  (- (alength arr) 1 (bitmap-indexed-node-index nodemap bit)))
-
 (defn- can-edit [x y]
   (and (coercive-not= x nil) (coercive-not= y nil) (identical? x y)))
 
@@ -50,8 +47,11 @@
 
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object
+  (node-at [_ bit]
+    (- (alength arr) 1 (bitmap-indexed-node-index nodemap bit)))
+
   (copy-and-set-node [inode e bit node]
-    (let [idx (node-at arr nodemap bit)]
+    (let [idx (.node-at inode bit)]
       (if ^boolean (can-edit e edit)
         (do
           (aset arr idx node)
@@ -116,7 +116,7 @@
               (set! (.-val added-leaf?) true)
               (.copy-and-migrate-to-node inode aedit bit new-node))))
         (not (zero? (bit-and nodemap bit)))
-        (let [sub-node (aget arr (node-at arr nodemap bit))
+        (let [sub-node (aget arr (.node-at inode bit))
               sub-node-new (.inode-assoc sub-node aedit (+ shift 5) hash key val added-leaf?)]
           (if (identical? sub-node sub-node-new)
             inode
@@ -160,7 +160,7 @@
             (aget arr (inc (* 2 idx)))
             not-found))
         (not (zero? (bit-and nodemap bit)))
-        (.inode-lookup (aget arr (node-at arr nodemap bit)) (+ shift 5) hash key not-found)
+        (.inode-lookup (aget arr (.node-at inode bit)) (+ shift 5) hash key not-found)
         :else
         not-found)))
 
@@ -174,7 +174,7 @@
             [k (aget arr (inc (* 2 idx)))]
             not-found))
         (not (zero? (bit-and nodemap bit)))
-        (.inode-lookup (node-at arr nodemap bit) (+ shift 5) hash key not-found)
+        (.inode-lookup (.node-at inode bit) (+ shift 5) hash key not-found)
         :else
         not-found)))
 
@@ -219,7 +219,7 @@
                (.copy-and-remove-value inode wedit bit)))
             inode))
         (not (zero? (bit-and nodemap bit)))
-        (let [sub-node (aget arr (node-at arr nodemap bit))
+        (let [sub-node (aget arr (.node-at inode bit))
               sub-node-new (.inode-without sub-node wedit (+ shift 5) hash key removed-leaf?)]
           (if (identical? sub-node sub-node-new)
             inode

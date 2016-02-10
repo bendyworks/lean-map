@@ -46,6 +46,54 @@
   (doseq [[size sample] size->sample]
     (simple-benchmark [] (transient-sized-map m size) sample)))
 
+(defmethod map-bench :assoc-replace [_ _ {:keys [small-map medium-map large-map]}]
+  (println "Assoc Replace")
+  (let [maps [small-map medium-map large-map]
+        samples [small-map-sample medium-map-sample large-map-sample]]
+    (doseq [[m sample] (partition 2 (interleave maps samples))]
+      (simple-benchmark
+        []
+        (loop [m m i (count m)]
+          (when (> i 0)
+            (recur (assoc m (get test-keys i) (inc i)) (dec i))))
+        sample))))
+
+(defmethod map-bench :transient-assoc-replace [_ _ {:keys [small-map medium-map large-map]}]
+  (println "Transient Assoc Replace")
+  (let [maps [small-map medium-map large-map]
+        samples [small-map-sample medium-map-sample large-map-sample]]
+    (doseq [[m sample] (partition 2 (interleave maps samples))]
+      (simple-benchmark
+        []
+        (loop [m (transient m) i (count m)]
+          (when (> i 0)
+            (recur (assoc! m (get test-keys i) (inc i)) (dec i))))
+        sample))))
+
+(defmethod map-bench :lookup [_ _ {:keys [small-map medium-map large-map]}]
+  (println "Lookup")
+  (let [maps [small-map medium-map large-map]
+        samples [small-map-sample medium-map-sample large-map-sample]]
+    (doseq [[m sample] (partition 2 (interleave maps samples))]
+      (simple-benchmark
+        []
+        (loop [m m i (count m)]
+          (when (> i 0)
+            (recur (get m (get test-keys i)) (dec i))))
+        sample))))
+
+(defmethod map-bench :lookup-fail [_ _ {:keys [small-map medium-map large-map]}]
+  (println "Lookup Fail")
+  (let [maps [small-map medium-map large-map]
+        samples [small-map-sample medium-map-sample large-map-sample]]
+    (doseq [[m sample] (partition 2 (interleave maps samples))]
+      (simple-benchmark
+        []
+        (loop [m m i (count m)]
+          (when (> i 0)
+            (recur (get m i) (dec i))))
+        sample))))
+
 (defmethod map-bench :dissoc [_ _ {:keys [small-map medium-map large-map]}]
   (println "Dissoc")
   (let [maps [small-map medium-map large-map]
@@ -152,7 +200,8 @@
                      (range large-map-size)))
 
 (println "Current Maps")
-(let [benchmarks  [:assoc :transient-assoc :dissoc :transient-dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
+(let [benchmarks  [:assoc :transient-assoc :assoc-replace :transient-assoc-replace :dissoc :transient-dissoc :dissoc-fail
+                   :lookup :lookup-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
       empty-map cem
       data {:small-map (sized-map empty-map small-map-size)
             :medium-map (sized-map empty-map medium-map-size)
@@ -160,7 +209,8 @@
   (run-benchmarks benchmarks empty-map data))
 
 (println "Lean Maps")
-(let [benchmarks  [:assoc :transient-assoc :dissoc :transient-dissoc :dissoc-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
+(let [benchmarks  [:assoc :transient-assoc :assoc-replace :transient-assoc-replace :dissoc :transient-dissoc :dissoc-fail
+                   :lookup :lookup-fail :hash :equals :equals-fail :worst-equals :sequence :reduce]
       empty-map lem
       data {:small-map (sized-map empty-map small-map-size)
             :medium-map (sized-map empty-map medium-map-size)

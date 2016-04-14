@@ -184,11 +184,11 @@
         not-found)))
 
   (copy-and-remove-value [indoe e bit]
-    (let [idx (* 2 (bitmap-indexed-node-index datamap bit))
+    (let [idx (bitmap-indexed-node-index datamap bit)
           len (alength arr)
-          dst (make-array (- len 2))]
+          dst (make-array (dec len))]
       (array-copy arr 0 dst 0 idx)
-      (array-copy arr (+ idx 2) dst idx (- len idx 2))
+      (array-copy arr (dec idx) dst idx (- len idx 1))
       (BitmapIndexedNode. e (bit-xor datamap bit) nodemap dst)))
 
   (copy-and-migrate-to-inline [inode e bit node]

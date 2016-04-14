@@ -68,7 +68,7 @@
           (BitmapIndexedNode. e datamap nodemap new-arr)))))
 
   (copy-and-set-value [inode e bit val]
-    (let [idx (inc (* 2 (bitmap-indexed-node-index datamap bit)))]
+    (let [idx (bitmap-indexed-node-index datamap bit)]
       (if ^boolean (can-edit e edit)
         (do
           (aset arr idx val)

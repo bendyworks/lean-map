@@ -45,6 +45,11 @@
   (let [key-hash-code (bit-or (+ 31 (hash key)) 0)]
     (mix-collection-hash (bit-or (+ (imul 31 key-hash-code) (hash value)) 0) 2)))
 
+(deftype KeyValue [key value]
+  Object
+  (to-vector [_]
+    [key value]))
+
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object
   (node-at [_ bit]

@@ -50,7 +50,11 @@
   (to-vector [_]
     [key value])
   (new-val [_ val]
-    (KeyValue. key val)))
+    (KeyValue. key val))
+  IHash
+  (-hash [_]
+    (let [key-hash-code (bit-or (+ 31 (hash key)) 0)]
+      (mix-collection-hash (bit-or (+ (imul 31 key-hash-code) (hash value)) 0) 2))))
 
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object

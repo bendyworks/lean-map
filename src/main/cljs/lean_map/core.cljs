@@ -211,15 +211,14 @@
     (let [bit (bitpos hash shift)]
       (cond
         (not (zero? (bit-and datamap bit)))
-        (let [idx (bitmap-indexed-node-index datamap bit)]
-          (if (key-test key (aget arr (* 2 idx)))
+        (let [idx (bitmap-indexed-node-index datamap bit)
+              kv (aget arr idx)]
+          (if (key-test key (.-key kv))
             (do
               (set! (.-val removed-leaf?) true)
               (if (and (== 2 (bit-count datamap)) (zero? nodemap))
-               (let [new-datamap (if (zero? shift) (bit-xor datamap bit) (bitpos hash 0))]
-                 (if (zero? idx)
-                   (BitmapIndexedNode. wedit new-datamap 0 (array (aget arr 2) (aget arr 3)))
-                   (BitmapIndexedNode. wedit new-datamap 0 (array (aget arr 0) (aget arr 1)))))
+                (let [new-datamap (if (zero? shift) (bit-xor datamap bit) (bitpos hash 0))]
+                  (BitmapIndexedNode. wedit new-datamap 0 (array kv)))
                (.copy-and-remove-value inode wedit bit)))
             inode))
         (not (zero? (bit-and nodemap bit)))

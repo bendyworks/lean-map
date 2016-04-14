@@ -48,7 +48,9 @@
 (deftype KeyValue [key value]
   Object
   (to-vector [_]
-    [key value]))
+    [key value])
+  (new-val [_ val]
+    (KeyValue. key val)))
 
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object

@@ -160,9 +160,9 @@
       (cond
         (not (zero? (bit-and datamap bit)))
         (let [idx (bitmap-indexed-node-index datamap bit)
-              k (aget arr (* 2 idx))]
-          (if (key-test  k key)
-            (aget arr (inc (* 2 idx)))
+              kv (aget arr idx)]
+          (if (key-test (.-key kv) key)
+            (.-value kv)
             not-found))
         (not (zero? (bit-and nodemap bit)))
         (.inode-lookup (aget arr (.node-at inode bit)) (+ shift 5) hash key not-found)

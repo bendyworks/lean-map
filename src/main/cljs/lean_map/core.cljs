@@ -583,7 +583,7 @@
   ISequential
   ISeq
   (-first [coll]
-    [(aget arr (* data-idx 2)) (aget arr (inc (* data-idx 2)))])
+    (.to-vector (aget arr data-idx)))
 
   (-rest [coll]
     (create-inode-seq arr lvl nodes cursors data-idx data-len))

@@ -87,19 +87,19 @@
       (array-copy arr (+ idx-new 2) dst (inc idx-new) (- (alength arr) idx-new 2))
       (BitmapIndexedNode. e (bit-xor datamap bit) (bit-or nodemap bit) dst)))
 
-  (merge-two-kv-pairs [inode medit shift key1 val1 key2hash key2 val2]
-    (let [key1hash (hash key1)]
+  (merge-two-kv-pairs [inode medit shift keyval1 key2hash keyval2]
+    (let [key1hash (hash (.-key keyval1))]
       (if (and (< 32 shift) (== key1hash key2hash))
-        (HashCollisionNode. medit key1hash 2 (array key1 val1 key2 val2))
+        (HashCollisionNode. medit key1hash 2 (array keyval1 keyval2))
         (let [mask1 (mask key1hash shift)
               mask2 (mask key2hash shift)]
           (if (== mask1 mask2)
-            (let [new-node (.merge-two-kv-pairs inode medit (+ shift 5) key1 val1 key2hash key2 val2)]
+            (let [new-node (.merge-two-kv-pairs inode medit (+ shift 5) keyval1 key2hash keyval2)]
               (BitmapIndexedNode. medit 0 (bitpos key1hash shift) (array new-node)))
             (let [new-datamap (bit-or (bitpos key1hash shift) (bitpos key2hash shift))]
               (if (< mask1 mask2)
-                (BitmapIndexedNode. medit new-datamap 0 (array key1 val1 key2 val2))
-                (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1)))))))))
+                (BitmapIndexedNode. medit new-datamap 0 (array keyval1 keyval2))
+                (BitmapIndexedNode. medit new-datamap 0 (array keyval2 keyval1)))))))))
 
   (inode-seq [inode]
     (let [nodes (make-array 7)

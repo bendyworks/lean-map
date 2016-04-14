@@ -193,13 +193,12 @@
 
   (copy-and-migrate-to-inline [inode e bit node]
     (let [idx-old (- (alength arr) 1 (bitmap-indexed-node-index nodemap bit))
-          idx-new (* 2 (bitmap-indexed-node-index datamap bit))
-          dst (make-array (inc (alength arr)))]
+          idx-new (bitmap-indexed-node-index datamap bit)
+          dst (make-array (alength arr))]
       (array-copy arr 0 dst 0 idx-new)
       (aset dst idx-new (aget (.-arr node) 0))
-      (aset dst (inc idx-new) (aget (.-arr node) 1))
-      (array-copy arr idx-new dst (+ idx-new 2) (- idx-old idx-new))
-      (array-copy arr (inc idx-old) dst (+ idx-old 2) (- (alength arr) idx-old 1))
+      (array-copy arr idx-new dst (inc idx-new) (- idx-old idx-new))
+      (array-copy arr (inc idx-old) dst (inc idx-old) (- (alength arr) idx-old 1))
       (BitmapIndexedNode. e (bit-or datamap bit) (bit-xor nodemap bit) dst)))
 
   (kv-reduce [inode f init]

@@ -78,13 +78,13 @@
           (BitmapIndexedNode. e datamap nodemap new-arr)))))
 
   (copy-and-migrate-to-node [inode e bit node]
-    (let [idx-old (* 2 (bitmap-indexed-node-index datamap bit))
+    (let [idx-old (bitmap-indexed-node-index datamap bit)
           idx-new (- (alength arr) 2 (bitmap-indexed-node-index nodemap bit))
-          dst (make-array (dec (alength arr)))]
+          dst (make-array (alength arr))]
       (array-copy arr 0 dst 0 idx-old)
-      (array-copy arr (+ 2 idx-old) dst idx-old (- idx-new idx-old))
+      (array-copy arr (inc idx-old) dst idx-old (- idx-new idx-old))
       (aset dst idx-new node)
-      (array-copy arr (+ idx-new 2) dst (inc idx-new) (- (alength arr) idx-new 2))
+      (array-copy arr (inc idx-new) dst (inc idx-new) (- (alength arr) idx-new 1))
       (BitmapIndexedNode. e (bit-xor datamap bit) (bit-or nodemap bit) dst)))
 
   (merge-two-kv-pairs [inode medit shift keyval1 key2hash keyval2]

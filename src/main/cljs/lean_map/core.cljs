@@ -192,7 +192,7 @@
           len (alength arr)
           dst (make-array (dec len))]
       (array-copy arr 0 dst 0 idx)
-      (array-copy arr (dec idx) dst idx (- len idx 1))
+      (array-copy arr (inc idx) dst idx (- len idx 1))
       (BitmapIndexedNode. e (bit-xor datamap bit) nodemap dst)))
 
   (copy-and-migrate-to-inline [inode e bit node]
@@ -223,7 +223,7 @@
               (if (and (== 2 (bit-count datamap)) (zero? nodemap))
                 (let [new-datamap (if (zero? shift) (bit-xor datamap bit) (bitpos hash 0))]
                   (BitmapIndexedNode. wedit new-datamap 0 (array kv)))
-               (.copy-and-remove-value inode wedit bit)))
+                (.copy-and-remove-value inode wedit bit)))
             inode))
         (not (zero? (bit-and nodemap bit)))
         (let [sub-node (aget arr (.node-at inode bit))

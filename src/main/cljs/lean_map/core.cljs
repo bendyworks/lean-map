@@ -51,8 +51,7 @@
     [key value])
   (new-val [_ val]
     (KeyValue. key val))
-  IHash
-  (-hash [_]
+  (hash [_]
     (let [key-hash-code (bit-or (+ 31 (hash key)) 0)]
       (mix-collection-hash (bit-or (+ (imul 31 key-hash-code) (hash value)) 0) 2))))
 
@@ -239,12 +238,12 @@
         inode)))
 
   (hash-node [_ hash-code]
-    (let [data-len (* (bit-count datamap) 2)
+    (let [data-len (bit-count datamap)
           len (alength arr)
           node-start (if (zero? datamap) 0 data-len)]
       (loop [d 0 hash-code hash-code]
         (if (< d data-len)
-          (recur (inc d) (bit-or (+ hash-code (-hash (aget arr d))) 0))
+          (recur (inc d) (bit-or (+ hash-code (.hash (aget arr d))) 0))
           (loop [n node-start hash-code hash-code]
             (if (< n len)
               (recur (inc n) (.hash-node (aget arr n) hash-code))

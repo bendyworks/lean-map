@@ -83,7 +83,7 @@
 
   (copy-and-migrate-to-node [inode e bit node]
     (let [idx-old (bitmap-indexed-node-index datamap bit)
-          idx-new (- (alength arr) 2 (bitmap-indexed-node-index nodemap bit))
+          idx-new (- (alength arr) 1 (bitmap-indexed-node-index nodemap bit))
           dst (make-array (alength arr))]
       (array-copy arr 0 dst 0 idx-old)
       (array-copy arr (inc idx-old) dst idx-old (- idx-new idx-old))
@@ -121,7 +121,7 @@
         (let [idx (bitmap-indexed-node-index datamap bit)
               kv (aget arr idx)]
           (if (key-test (.-key kv) key)
-            (.copy-and-set-value inode aedit bit (.new-value kv val))
+            (.copy-and-set-value inode aedit bit (.new-val kv val))
             (let [new-node (.merge-two-kv-pairs inode aedit (+ shift 5) kv hash (KeyValue. key val))]
               (set! (.-val added-leaf?) true)
               (.copy-and-migrate-to-node inode aedit bit new-node))))

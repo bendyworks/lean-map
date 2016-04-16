@@ -53,7 +53,11 @@
     (KeyValue. key val))
   (hash [_]
     (let [key-hash-code (bit-or (+ 31 (hash key)) 0)]
-      (mix-collection-hash (bit-or (+ (imul 31 key-hash-code) (hash value)) 0) 2))))
+      (mix-collection-hash (bit-or (+ (imul 31 key-hash-code) (hash value)) 0) 2)))
+  IEquiv
+  (-equiv [_ other]
+    (when (instance? KeyValue other)
+      (and (= key (.-key other)) (= value (.-value other))))))
 
 (deftype BitmapIndexedNode [edit ^:mutable datamap ^:mutable nodemap ^:mutable arr]
   Object
@@ -258,7 +262,7 @@
           (let [len (alength arr)]
             (loop [i 0 eq true]
               (if (and eq (< i len))
-                (recur (inc i) (= (aget arr i) (aget (.-arr other)i)))
+                (recur (inc i) (= (aget arr i) (aget (.-arr other) i)))
                 eq))))))))
 
 (set! (.-EMPTY BitmapIndexedNode) (BitmapIndexedNode. nil 0 0 (make-array 0)))

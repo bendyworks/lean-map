@@ -69,19 +69,18 @@
       (array-copy arr (+ idx-new 2) dst (inc idx-new) (- (alength arr) idx-new 2))
       (BitmapIndexedNode. e (bit-xor datamap bit) (bit-or nodemap bit) dst)))
 
-  (merge-two-kv-pairs [inode medit shift key1 val1 key2hash key2 val2]
-    (let [key1hash (hash key1)]
-      (if (and (< 32 shift) (== key1hash key2hash))
-        (HashCollisionNode. medit key1hash 2 (array key1 val1 key2 val2))
-        (let [mask1 (mask key1hash shift)
-              mask2 (mask key2hash shift)]
-          (if (== mask1 mask2)
-            (let [new-node (.merge-two-kv-pairs inode medit (+ shift 5) key1 val1 key2hash key2 val2)]
-              (BitmapIndexedNode. medit 0 (bitpos key1hash shift) (array new-node)))
-            (let [new-datamap (bit-or (bitpos key1hash shift) (bitpos key2hash shift))]
-              (if (< mask1 mask2)
-                (BitmapIndexedNode. medit new-datamap 0 (array key1 val1 key2 val2))
-                (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1)))))))))
+  (merge-two-kv-pairs [inode medit shift key1hash key1 val1 key2hash key2 val2]
+    (if (and (< 32 shift) (== key1hash key2hash))
+      (HashCollisionNode. medit key1hash 2 (array key1 val1 key2 val2))
+      (let [mask1 (mask key1hash shift)
+            mask2 (mask key2hash shift)]
+        (if (== mask1 mask2)
+          (let [new-node (.merge-two-kv-pairs inode medit (+ shift 5) key1hash key1 val1 key2hash key2 val2)]
+            (BitmapIndexedNode. medit 0 (bitpos key1hash shift) (array new-node)))
+          (let [new-datamap (bit-or (bitpos key1hash shift) (bitpos key2hash shift))]
+            (if (< mask1 mask2)
+              (BitmapIndexedNode. medit new-datamap 0 (array key1 val1 key2 val2))
+              (BitmapIndexedNode. medit new-datamap 0 (array key2 val2 key1 val1))))))))
 
   (inode-seq [inode]
     (let [nodes (make-array 7)
@@ -92,8 +91,8 @@
         (create-inode-seq arr 0 nodes cursors-lengths 0 0)
         (NodeSeq. nil arr 0 nodes cursors-lengths 0 (dec (.data-arity inode)) nil))))
 
-  (inode-assoc [inode aedit shift hash key val added-leaf?]
-    (let [bit (bitpos hash shift)]
+  (inode-assoc [inode aedit shift keyhash key val added-leaf?]
+    (let [bit (bitpos keyhash shift)]
       (cond
         (not (zero? (bit-and datamap bit)))
         (let [idx (bitmap-indexed-node-index datamap bit)
@@ -101,13 +100,13 @@
           (if (key-test k key)
             (.copy-and-set inode aedit (inc (* 2 idx)) val)
             (let [v (aget arr (inc (* 2 idx)))
-                  new-node (.merge-two-kv-pairs inode aedit (+ shift 5) k v hash key val)]
+                  new-node (.merge-two-kv-pairs inode aedit (+ shift 5) (hash k) k v keyhash key val)]
               (set! (.-val added-leaf?) true)
               (.copy-and-migrate-to-node inode aedit bit new-node))))
         (not (zero? (bit-and nodemap bit)))
         (let [node-idx (.node-at inode bit)
               sub-node (aget arr node-idx)
-              sub-node-new (.inode-assoc sub-node aedit (+ shift 5) hash key val added-leaf?)]
+              sub-node-new (.inode-assoc sub-node aedit (+ shift 5) keyhash key val added-leaf?)]
           (if (identical? sub-node sub-node-new)
             inode
             (.copy-and-set inode aedit node-idx sub-node-new)))

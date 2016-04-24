@@ -281,9 +281,8 @@
     (assert (== hash collision-hash))
     (let [idx (hash-collision-node-find-index arr cnt key)]
       (if ^boolean hedit
-        (if ^boolean (can-edit edit hedit)
-         (.mutable-inode-assoc inode idx key val added-leaf?)
-         (.mutable-inode-assoc (HashCollisionNode. hedit hash cnt (aclone arr)) idx key val added-leaf?))
+        (let [new-node (if ^boolean (can-edit edit hedit) inode (HashCollisionNode. hedit hash cnt (aclone arr)))]
+          (.mutable-inode-assoc new-node idx key val added-leaf?))
         (.persistent-inode-assoc inode idx hedit key val added-leaf?))))
 
   (has-nodes? [_]

@@ -16,7 +16,7 @@
 (goog-define run false)
 
 (defn show-percents [histograms]
-  (into {} (map (fn [[histogram percentages]] [histogram (zipmap percents percentages)]) histograms)))
+  (into {} (map (fn [[histogram percentages]] [histogram (into (sorted-map) (zipmap percents percentages))]) histograms)))
 
 (if run
   (let [histograms (hb/get-histogram-data size times)]

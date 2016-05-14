@@ -37,7 +37,7 @@
       (recur (inc j) (system-time)))))
 
 (defn num-sort [a b] (- a b))
-(def histogram-percents [50 90 95 99 99.9 99.99])
+(def histogram-percents [5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 99 99.9 99.99])
 (defn histogram-numbers [histogram-array histogram-percents]
   (.sort histogram-array num-sort)
   (let [hist-len (alength histogram-array)
@@ -63,7 +63,7 @@
                   (assoc-in [:total op] (histogram-numbers total-array histogram-percents))))
             {:assoc-size size
              :repeat-times times}
-            {:current-assoc current-empty
-             :lean-assoc lean-empty
-             :current-assoc-replace current-filled
-             :lean-assoc-replace lean-filled})))
+            {:current-assoc-insert current-empty
+             :lean-assoc-insert lean-empty
+             :current-assoc-update current-filled
+             :lean-assoc-update lean-filled})))

@@ -63,7 +63,7 @@
                   (assoc-in [:total op] (histogram-numbers total-array histogram-percents))))
             {:assoc-size size
              :repeat-times times}
-            {:current-assoc-insert current-empty
-             :lean-assoc-insert lean-empty
-             :current-assoc-update current-filled
-             :lean-assoc-update lean-filled})))
+            {:current/assoc-insert current-empty
+             :lean/assoc-insert lean-empty
+             :current/assoc-update current-filled
+             :lean/assoc-update lean-filled})))

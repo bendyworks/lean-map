@@ -1,2 +1,2 @@
 #!/bin/sh
-lein trampoline run -m clojure.main script/histogram-command-line.clj
+lein with-profile histogram trampoline run -m clojure.main script/histogram-command-line.clj

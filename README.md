@@ -5,7 +5,7 @@ A ClojureScript implementation of Lean Hash Array Mapped Tries. See [reference](
 ### Leiningen
 
 ```clojure
-[lean-map "0.3.1"]
+[lean-map "0.3.2"]
 ```
 
 ### Technical Terms

@@ -10,7 +10,7 @@
 
   :jvm-opts ^:replace ["-Xms512m" "-Xmx512m" "-server"]
 
-  :dependencies [[org.clojure/clojure "1.7.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.8.51"]]
 
   :profiles {:test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}

@@ -15,3 +15,7 @@ pom.xml.asc
 resources/*
 /dev
 *.iml
+!resources/histogram/
+!resources/histogram/index.html
+!resources/histogram/c3.css
+resources/histogram/*

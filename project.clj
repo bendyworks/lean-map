@@ -13,7 +13,8 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.8.51"]]
 
-  :profiles {:test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}}
+  :profiles {:test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}
+             :histogram {:dependencies [[cljsjs/c3 "0.4.10-0"]]}}
 
   :plugins [[lein-doo "0.1.6"]]
 

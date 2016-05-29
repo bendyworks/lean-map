@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <link href="c3.css" media="screen" rel="stylesheet" type="text/css">
+    <meta charset="UTF-8">
+    <title>Current vs Lean Hash Map Histograms</title>
+  </head>
+  <body>
+    <form id="map">
+      <label>Size of Map:</label>
+      <input type="text" name="size" placeholder="10"/>
+      <label>Number of Iterations:</label>
+      <input type="text" name="times" placeholder="2000"/>
+      <label>Log Chart Data:</label>
+      <input type="checkbox" name="log"/>
+      <input type="button" value="Chart Histogram" onclick="cljs.lean_map.histogram.chart.chart_histogram();" />
+    </form>
+    <h1>Assoc Total for all operations</h1>
+    <h2 class="title">Inserts</h2>
+    <div id="assoc-insert-total"></div>
+    <h2 class="title">Updates</h2>
+    <div id="assoc-update-total"></div>
+    <h1>Individual Assoc Operation</h1>
+    <h2 class="title">Inserts</h2>
+    <div id="assoc-insert-op"></div>
+    <h2 class="title">Updates</h2>
+    <div id="assoc-update-op"></div>
+    <script src="chart.js"></script>
+  </body>
+</html>

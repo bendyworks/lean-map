@@ -7,13 +7,21 @@
   :clean-targets ^{:protect false} ["resources/out"]
 
   :source-paths  ["src/main"]
+  :java-source-paths ["src/main/java"]
 
   :jvm-opts ^:replace ["-Xms512m" "-Xmx512m" "-server"]
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.8.51"]]
 
-  :profiles {:test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}
+  :profiles {:clj {:source-paths ["dev"]
+                   :dependencies [[im.chit/vinyasa "0.4.3"]
+                                  [leiningen #=(leiningen.core.main/leiningen-version)]]
+                   :injections [(require '[vinyasa.inject :as inject])
+                                (inject/in
+                                  [vinyasa.inject :refer [inject [in inject-in]]]
+                                  [vinyasa.lein :exclude [*project*]])]}
+             :test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}
              :histogram {:dependencies [[cljsjs/c3 "0.4.10-0"]]}}
 
   :plugins [[lein-doo "0.1.6"]]

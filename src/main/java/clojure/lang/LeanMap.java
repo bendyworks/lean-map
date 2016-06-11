@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class LeanMap extends APersistentMap {
+public class LeanMap extends APersistentMap implements IEditableCollection {
 
     final int count;
     final INode root;
@@ -90,6 +90,61 @@ public class LeanMap extends APersistentMap {
 
     private static boolean isAllowedToEdit(AtomicReference<Thread> x, AtomicReference<Thread> y) {
         return x != null && y != null && (x == y || x.get() == y.get());
+    }
+
+    public TransientLeanMap asTransient() {
+        return new TransientLeanMap(this);
+    }
+
+    static final class TransientLeanMap extends ATransientMap {
+        final AtomicReference<Thread> edit;
+        volatile INode root;
+        volatile int count;
+        final Box leafFlag = new Box(null);
+
+        TransientLeanMap(LeanMap m) {
+            this(new AtomicReference<Thread>(Thread.currentThread()), m.root, m.count);
+        }
+
+        TransientLeanMap(AtomicReference<Thread> edit, INode root, int count) {
+            this.edit = edit;
+            this.root = root;
+            this.count = count;
+        }
+
+        ITransientMap doAssoc(Object key, Object val) {
+            leafFlag.val = null;
+            INode n = ((this.root == null) ? BitmapIndexedNode.EMPTY : this.root)
+                    .assoc(this.edit, 0, Util.hasheq(key), key, val, leafFlag);
+            if (n != this.root) {
+                this.root = n;
+            }
+            if(leafFlag.val != null) {
+                this.count++;
+            }
+            return this;
+        }
+
+        IPersistentMap doPersistent() {
+            this.edit.set(null);
+            return new LeanMap(this.count, this.root);
+        }
+
+        Object doValAt(Object key, Object notFound) {
+            return root.find(0, Util.hasheq(key), key, notFound);
+        }
+
+        int doCount() {
+            return this.count;
+        }
+
+        void ensureEditable(){
+            if(this.edit.get() == null) {
+                throw new IllegalAccessError("Transient used after persistent! call");
+            }
+        }
+
+        ITransientMap doWithout(Object key) { return null; } //TODO: Implement this
     }
 
     interface INode extends Serializable {

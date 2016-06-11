@@ -147,7 +147,7 @@ public class LeanMap extends APersistentMap {
 
         private INode mergeTwoKeyValuePairs(AtomicReference<Thread> edit, int shift, int current_hash, Object current_key, Object current_val, int hash, Object key, Object val) {
             if ((32 < shift) && (current_hash == hash)) {
-                return null; //TODO: Set to HashCollision Node
+                return new HashCollisionNode(edit, current_hash, 2, new Object[] { current_key, current_val, key, val });
             } else {
                 final int current_mask = mask(current_hash, shift);
                 final int mask = mask(hash, shift);
@@ -256,6 +256,102 @@ public class LeanMap extends APersistentMap {
             } else {
                 return null;
             }
+        }
+    }
+
+    final static class HashCollisionNode implements INode {
+        final int hash;
+        int count;
+        Object[] array;
+        final AtomicReference<Thread> edit;
+
+        HashCollisionNode(AtomicReference<Thread> edit, int hash, int count, Object... array){
+            this.edit = edit;
+            this.hash = hash;
+            this.count = count;
+            this.array = array;
+        }
+
+        public int findIndex(Object key){
+            for(int i = 0; i < 2*count; i+=2)
+            {
+                if(Util.equiv(key, array[i])) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private INode mutableAssoc(int idx, Object key, Object val, Box addedLeaf) {
+            if(idx == -1) {
+                Object[] new_array = new Object[(array.length + 2)];
+                System.arraycopy(array, 0, new_array, 0, array.length);
+                new_array[array.length] = key;
+                new_array[(array.length + 1)] = val;
+                addedLeaf.val = addedLeaf;
+
+                this.array = new_array;
+                this.count = this.count + 1;
+            } else {
+                if(this.array[(idx + 1)] != val) {
+                    this.array[(idx + 1)] = val;
+                }
+            }
+
+            return this;
+        }
+
+        private INode persistentAssoc(int idx, Object key, Object val, Box addedLeaf) {
+            if(idx == -1) {
+                Object[] new_array = new Object[(array.length + 2)];
+                System.arraycopy(array, 0, new_array, 0, array.length);
+                new_array[array.length] = key;
+                new_array[(array.length + 1)] = val;
+                addedLeaf.val = addedLeaf;
+
+                return new HashCollisionNode(this.edit, this.hash, (this.count + 1), new_array);
+            } else {
+                if(this.array[(idx + 1)] == val) {
+                    return this;
+                } else {
+                    Object[] new_array = this.array.clone();
+                    new_array[(idx + 1)] = val;
+
+                    return new HashCollisionNode(this.edit, this.hash, (this.count + 1), new_array);
+                }
+            }
+        }
+
+        public INode assoc(AtomicReference<Thread> edit, int shift, int hash, Object key, Object val, Box addedLeaf){
+            int idx = findIndex(key);
+            if (isAllowedToEdit(edit, this.edit)) {
+                HashCollisionNode new_node = (edit == this.edit) ? this : new HashCollisionNode(edit, this.hash, this.count, this.array.clone());
+                return new_node.mutableAssoc(idx, key, val, addedLeaf);
+            } else {
+                return this.persistentAssoc(idx, key, val, addedLeaf);
+            }
+        }
+
+        public Object find(int shift, int hash, Object key, Object notFound){
+            int idx = findIndex(key);
+            if(idx < 0) {
+                return notFound;
+            }
+            if(Util.equiv(key, array[idx])) {
+                return array[idx + 1];
+            }
+            return notFound;
+        }
+
+        public IMapEntry find(int shift, int hash, Object key){
+            int idx = findIndex(key);
+            if(idx < 0) {
+                return null;
+            }
+            if(Util.equiv(key, array[idx])) {
+                return MapEntry.create(array[idx], array[idx + 1]);
+            }
+            return null;
         }
     }
 }

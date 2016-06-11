@@ -9,3 +9,11 @@
 (t/deftest assoc-operations-with-hash-collisions
   (t/is (= :bar1 (-> lmu/empty (assoc :key70327 :bar1 :key101439 :bar2) (get :key70327))))
   (t/is (= :bar2 (-> lmu/empty (assoc :key70327 :bar1 :key101439 :bar2) (get :key101439)))))
+
+(t/deftest transient-assoc-operations
+  (t/is (= :bar (-> lmu/empty transient (assoc! :foo :bar) persistent! (get :foo))))
+  (t/is (= :baz (-> lmu/empty transient (assoc! :whee :bar) persistent! (get :foo :baz)))))
+
+(t/deftest transient-assoc-operations-with-hash-collisions
+  (t/is (= :bar1 (-> lmu/empty transient (assoc! :key70327 :bar1 :key101439 :bar2) persistent! (get :key70327))))
+  (t/is (= :bar2 (-> lmu/empty transient (assoc! :key70327 :bar1 :key101439 :bar2) persistent! (get :key101439)))))

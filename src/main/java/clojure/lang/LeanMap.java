@@ -1,16 +1,6 @@
-package com.bendyworks;
+package clojure.lang;
 
 import java.util.Iterator;
-
-import clojure.lang.APersistentMap;
-import clojure.lang.IFn;
-import clojure.lang.IMapEntry;
-import clojure.lang.IPersistentCollection;
-import clojure.lang.IPersistentMap;
-import clojure.lang.ISeq;
-import clojure.lang.MapEntry;
-import clojure.lang.Util;
-import clojure.lang.Box;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;

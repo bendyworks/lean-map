@@ -1,5 +1,5 @@
 (ns clojure.lean-map.util
-  (:import [com.bendyworks LeanMap])
+  (:import [clojure.lang LeanMap])
   (:refer-clojure :exclude [empty hash-map]))
 
 (def empty LeanMap/EMPTY)

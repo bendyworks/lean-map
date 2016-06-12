@@ -64,7 +64,70 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
 
     public IPersistentMap without(Object key) { return null; } //TODO: Implement
 
-    public ISeq seq() { return null; } //TODO: Implement
+    public ISeq seq() { return  root != null ? root.nodeSeq() : null; }
+
+    private static NodeSeq createINodeSeq(Object[] array, int lvl, INode[] nodes, int[] cursor_lengths, int data_idx, int data_len) {
+        if (data_idx < data_len) {
+            return new NodeSeq(null, array, lvl, nodes, cursor_lengths, (data_idx + 1), data_len);
+        } else {
+            while(lvl >= 0) {
+                int node_idx = cursor_lengths[lvl];
+                if (node_idx == 0) {
+                    lvl = lvl - 1;
+                } else {
+                    cursor_lengths[lvl] = (node_idx - 1);
+
+                    INode node = nodes[lvl].getNode(node_idx);
+                    boolean has_nodes = node.hasNodes();
+                    int new_lvl = has_nodes ? (lvl + 1) : lvl;
+
+                    if (has_nodes) {
+                        nodes[new_lvl] = node;
+                        cursor_lengths[new_lvl] = node.nodeArity();
+                    }
+
+                    if (node.hasData()){
+                        return new NodeSeq(null, node.getArray(), new_lvl, nodes, cursor_lengths, 0, (node.dataArity() - 1));
+                    }
+
+                    lvl = lvl + 1;
+                }
+            }
+            return null;
+        }
+    }
+
+    static final class NodeSeq extends ASeq {
+        final Object[] array;
+        final INode[] nodes;
+        final int[] cursor_lengths;
+        final int lvl;
+        final int data_idx;
+        final int data_len;
+
+        NodeSeq(IPersistentMap meta, Object[] array, int lvl, INode[] nodes, int[] cursor_lengths, int data_idx, int data_len) {
+            super(meta);
+            this.array = array;
+            this.nodes = nodes;
+            this.lvl = lvl;
+            this.cursor_lengths = cursor_lengths;
+            this.data_idx = data_idx;
+            this.data_len = data_len;
+        }
+
+        public Obj withMeta(IPersistentMap meta) {
+            return new NodeSeq(meta, this.array, this.lvl, this.nodes, this.cursor_lengths, this.data_idx, this.data_len);
+        }
+
+        public Object first() {
+            return MapEntry.create(array[(this.data_idx * 2)], array[((this.data_idx * 2) + 1)]);
+        }
+
+        public ISeq next() {
+            return createINodeSeq(this.array, this.lvl, this.nodes, this.cursor_lengths, this.data_idx, this.data_len);
+        }
+
+    }
 
     public IPersistentMap meta(){
         return _meta;
@@ -153,6 +216,20 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
         Object find(int shift, int hash, Object key, Object not_found);
 
         IMapEntry find(int shift, int hash, Object key);
+
+        ISeq nodeSeq();
+
+        boolean hasData();
+
+        boolean hasNodes();
+
+        INode getNode(int node_idx);
+
+        Object[] getArray();
+
+        int nodeArity();
+
+        int dataArity();
     }
 
     final static class BitmapIndexedNode implements INode {
@@ -302,6 +379,42 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
                 return null;
             }
         }
+
+        public boolean hasNodes() {
+            return this.nodemap != 0;
+        }
+
+        public boolean hasData() {
+            return this.datamap != 0;
+        }
+
+        public int nodeArity() {
+            return Integer.bitCount(this.nodemap);
+        }
+
+        public int dataArity() {
+            return Integer.bitCount(this.datamap);
+        }
+
+        public INode getNode(int node_idx) {
+            return (INode) this.array[(this.array.length - node_idx)];
+        }
+
+        public Object[] getArray() {
+            return this.array;
+        }
+
+        public NodeSeq nodeSeq() {
+            INode[] nodes = new INode[7];
+            int[] cursor_lengths = new int[] {0, 0, 0, 0, 0, 0, 0};
+            nodes[0] = this;
+            cursor_lengths[0] = this.nodeArity();
+            if (this.datamap == 0) {
+                return createINodeSeq(this.array, 0, nodes, cursor_lengths, 0, 0);
+            } else {
+                return new NodeSeq(null, this.array, 0, nodes, cursor_lengths, 0, (this.dataArity() - 1));
+            }
+        }
     }
 
     final static class HashCollisionNode implements INode {
@@ -397,6 +510,34 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
                 return MapEntry.create(array[idx], array[idx + 1]);
             }
             return null;
+        }
+
+        public boolean hasNodes() {
+            return false;
+        }
+
+        public boolean hasData() {
+            return true;
+        }
+
+        public int nodeArity() {
+            return 0;
+        }
+
+        public int dataArity() {
+            return this.count;
+        }
+
+        public INode getNode(int node_idx) {
+            return null;
+        }
+
+        public Object[] getArray() {
+            return this.array;
+        }
+
+        public NodeSeq nodeSeq() {
+            throw new UnsupportedOperationException();
         }
     }
 }

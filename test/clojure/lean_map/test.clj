@@ -17,3 +17,7 @@
 (t/deftest transient-assoc-operations-with-hash-collisions
   (t/is (= :bar1 (-> lmu/empty transient (assoc! :key70327 :bar1 :key101439 :bar2) persistent! (get :key70327))))
   (t/is (= :bar2 (-> lmu/empty transient (assoc! :key70327 :bar1 :key101439 :bar2) persistent! (get :key101439)))))
+
+(t/deftest seq-operations
+  (t/is (= false (-> lmu/empty (assoc :foo :bar) seq empty?)))
+  (t/is (= [:foo :bar] (-> lmu/empty (assoc :foo :bar) seq first))))

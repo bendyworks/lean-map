@@ -25,3 +25,7 @@
 (t/deftest seq-operations
   (t/is (= false (-> lmu/empty (assoc :foo :bar) seq empty?)))
   (t/is (= [:foo :bar] (-> lmu/empty (assoc :foo :bar) seq first))))
+
+(t/deftest kv-reduce-operations
+  (t/is (= 45 (let [kvm (->> (zipmap (range 10) (range 10)) (into lmu/empty))]
+                (.kvreduce kvm (fn [sum _ v] (+ sum v)) 0)))))

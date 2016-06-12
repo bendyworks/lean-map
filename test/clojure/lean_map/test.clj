@@ -2,6 +2,10 @@
   (:require [clojure.lean-map.util :as lmu]
             [clojure.test :as t]))
 
+(t/deftest meta-operations
+  (t/is (= {:foo :bar} (-> lmu/empty (with-meta {:foo :bar}) meta)))
+  (t/is (= {:foo :bar} (-> lmu/empty (with-meta {:foo :bar}) (assoc :foo :bar) meta))))
+
 (t/deftest assoc-operations
   (t/is (= :bar (-> lmu/empty (assoc :foo :bar) (get :foo))))
   (t/is (= :baz (-> lmu/empty (assoc :whee :bar) (get :foo :baz)))))

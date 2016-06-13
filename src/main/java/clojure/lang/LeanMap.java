@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class LeanMap extends APersistentMap implements IEditableCollection {
+public class LeanMap extends APersistentMap implements IEditableCollection, IObj, IKVReduce {
 
     final int count;
     final INode root;
@@ -97,6 +97,21 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
         }
     }
 
+    public Object kvreduce(IFn f, Object init) {
+        if(RT.isReduced(init)) {
+            return ((IDeref)init).deref();
+        }
+        if(root != null){
+            init = root.kvreduce(f,init);
+            if(RT.isReduced(init)) {
+                return ((IDeref) init).deref();
+            } else {
+                return init;
+            }
+        }
+        return init;
+    }
+
     static final class NodeSeq extends ASeq {
         final Object[] array;
         final INode[] nodes;
@@ -127,6 +142,25 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
             return createINodeSeq(this.array, this.lvl, this.nodes, this.cursor_lengths, this.data_idx, this.data_len);
         }
 
+        public static Object kvreduce(Object[] array, int key_values, int nodes, IFn f, Object init) {
+            int key_value_len = (2 * key_values);
+            int node_len = key_value_len + nodes;
+
+            int i = 0;
+            while (i < node_len) {
+                if (i < key_value_len) {
+                    init = f.invoke(init, array[i], array[(i + 1)]);
+                    i = i + 2;
+                } else {
+                    init = ((INode) array[i]).kvreduce(f, init);
+                    i = i + 1;
+                }
+                if (RT.isReduced(init)) {
+                    return init;
+                }
+            }
+            return init;
+        }
     }
 
     public IPersistentMap meta(){
@@ -230,6 +264,8 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
         int nodeArity();
 
         int dataArity();
+
+        public Object kvreduce(IFn f, Object init);
     }
 
     final static class BitmapIndexedNode implements INode {
@@ -415,6 +451,10 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
                 return new NodeSeq(null, this.array, 0, nodes, cursor_lengths, 0, (this.dataArity() - 1));
             }
         }
+
+        public Object kvreduce(IFn f, Object init) {
+            return NodeSeq.kvreduce(this.array, Integer.bitCount(this.datamap), Integer.bitCount(this.nodemap), f, init);
+        }
     }
 
     final static class HashCollisionNode implements INode {
@@ -538,6 +578,10 @@ public class LeanMap extends APersistentMap implements IEditableCollection {
 
         public NodeSeq nodeSeq() {
             throw new UnsupportedOperationException();
+        }
+
+        public Object kvreduce(IFn f, Object init) {
+            return NodeSeq.kvreduce(this.array, this.count, 0, f, init);
         }
     }
 }

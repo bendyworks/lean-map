@@ -22,6 +22,13 @@
   (t/is (= :bar1 (-> lmu/empty transient (assoc! :key70327 :bar1 :key101439 :bar2) persistent! (get :key70327))))
   (t/is (= :bar2 (-> lmu/empty transient (assoc! :key70327 :bar1 :key101439 :bar2) persistent! (get :key101439)))))
 
+(t/deftest dissoc-operations
+  (t/is (= [:foo1] (-> lmu/empty (assoc :foo :bar :foo1 :bar1) (dissoc :foo) keys vec))))
+
+(t/deftest dissoc-operations-with-hash-collisions
+  (t/is (= [:key101439] (-> lmu/empty (assoc :key70327 :bar1 :key101439 :bar2) (dissoc :key70327) keys vec)))
+  (t/is (= :bar2 (-> lmu/empty (assoc :key70327 :bar1 :key101439 :bar2) (dissoc :key70327) (get :key101439 :bar0)))))
+
 (t/deftest hash-map-operations
   (t/is (= (lmu/hash-map :foo :bar) (-> lmu/empty (assoc :foo :bar))))
   (t/is (= :bar (-> (lmu/hash-map :foo :bar) (get :foo)))))

@@ -2,6 +2,7 @@ package clojure.lang;
 
 import java.util.Iterator;
 
+import java.util.*;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -25,6 +26,74 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
     final public static LeanMap EMPTY = new LeanMap(0, null);
     final private static Object NOT_FOUND = new Object();
+
+    static public IPersistentMap create(Map other){
+        ITransientMap ret = EMPTY.asTransient();
+        for(Object o : other.entrySet())
+        {
+            Map.Entry e = (Entry) o;
+            ret = ret.assoc(e.getKey(), e.getValue());
+        }
+        return ret.persistent();
+    }
+
+    /*
+     * @param init {key1,val1,key2,val2,...}
+     */
+    public static LeanMap create(Object... init){
+        ITransientMap ret = EMPTY.asTransient();
+        for(int i = 0; i < init.length; i += 2)
+        {
+            ret = ret.assoc(init[i], init[i + 1]);
+        }
+        return (LeanMap) ret.persistent();
+    }
+
+    public static LeanMap createWithCheck(Object... init){
+        ITransientMap ret = EMPTY.asTransient();
+        for(int i = 0; i < init.length; i += 2)
+        {
+            ret = ret.assoc(init[i], init[i + 1]);
+            if(ret.count() != ((i / 2) + 1)) {
+                throw new IllegalArgumentException("Duplicate key: " + init[i]);
+            }
+        }
+        return (LeanMap) ret.persistent();
+    }
+
+    static public LeanMap create(ISeq items){
+        ITransientMap ret = EMPTY.asTransient();
+        for(; items != null; items = items.next().next())
+        {
+            if(items.next() == null) {
+                throw new IllegalArgumentException(String.format("No value supplied for key: %s", items.first()));
+            }
+            ret = ret.assoc(items.first(), RT.second(items));
+        }
+        return (LeanMap) ret.persistent();
+    }
+
+    static public LeanMap createWithCheck(ISeq items){
+        ITransientMap ret = EMPTY.asTransient();
+        for(int i=0; items != null; items = items.next().next(), ++i)
+        {
+            if(items.next() == null) {
+                throw new IllegalArgumentException(String.format("No value supplied for key: %s", items.first()));
+            }
+            ret = ret.assoc(items.first(), RT.second(items));
+            if(ret.count() != (i + 1)) {
+                throw new IllegalArgumentException("Duplicate key: " + items.first());
+            }
+        }
+        return (LeanMap) ret.persistent();
+    }
+
+    /*
+     * @param init {key1,val1,key2,val2,...}
+     */
+    public static LeanMap create(IPersistentMap meta, Object... init){
+        return create(init).withMeta(meta);
+    }
 
     public IPersistentMap assoc(Object key, Object val){
         Box added_leaf = new Box(null);

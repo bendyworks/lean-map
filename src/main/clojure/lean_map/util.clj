@@ -7,5 +7,6 @@
 (defn hash-map
   "keyval => key val
   Returns a new lean map with supplied mappings."
-  [& keyvals]
-  (throw (UnsupportedOperationException. "hash-map operation is not supported yet")))
+  ([] {})
+  ([& keyvals]
+   (. LeanMap (create keyvals))))

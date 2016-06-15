@@ -131,7 +131,16 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
     public Iterator iterator(IFn f) {return null; } //TODO: Implement
 
-    public IPersistentMap without(Object key) { return null; } //TODO: Implement
+    public IPersistentMap without(Object key){
+        if(this.root == null) {
+            return this;
+        }
+        INode new_root = this.root.without(null, 0, Util.hasheq(key), key, new Box(null));
+        if(new_root == this.root) {
+            return this;
+        }
+        return new LeanMap(meta(), (this.count - 1), new_root);
+    }
 
     public ISeq seq() { return  root != null ? root.nodeSeq() : null; }
 
@@ -258,6 +267,13 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
         return x != null && y != null && (x == y || x.get() == y.get());
     }
 
+    private static Object[] removePair(Object[] array, int i) {
+        Object[] newArray = new Object[array.length - 2];
+        System.arraycopy(array, 0, newArray, 0, 2*i);
+        System.arraycopy(array, 2*(i+1), newArray, 2*i, newArray.length - 2*i);
+        return newArray;
+    }
+
     public TransientLeanMap asTransient() {
         return new TransientLeanMap(this);
     }
@@ -315,6 +331,10 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
     interface INode extends Serializable {
         INode assoc(AtomicReference<Thread> edit, int shift, int hash, Object key, Object val, Box added_leaf);
+
+        INode without(AtomicReference<Thread> edit, int shift, int hash, Object key, Box removed_leaf);
+
+        boolean singleKV();
 
         Object find(int shift, int hash, Object key, Object not_found);
 
@@ -445,6 +465,74 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
                 return new BitmapIndexedNode(edit, (this.datamap | bit), this.nodemap, new_array);
             }
+        }
+
+        public boolean singleKV() { return ((0 == this.nodemap) && (1 == Integer.bitCount(this.datamap))); }
+
+        private INode copyAndRemoveValue(AtomicReference<Thread> edit, int bit) {
+            final int idx = (2 * bitmapNodeIndex(this.datamap, bit));
+            final Object[] dst = new Object[(this.array.length - 2)];
+            System.arraycopy(this.array, 0, dst, 0, idx);
+            System.arraycopy(this.array, (idx + 2), dst, idx, (this.array.length - idx -2));
+
+            return new BitmapIndexedNode(edit, (this.datamap ^ bit), this.nodemap, dst);
+        }
+
+        private INode copyAndMigrateToInline(AtomicReference<Thread> edit, int bit, INode node) {
+            final int idx_old = (this.array.length - 1 - bitmapNodeIndex(this.nodemap, bit));
+            final int idx_new = (2 * bitmapNodeIndex(this.datamap, bit));
+            final Object[] dst = new Object[(this.array.length + 1)];
+
+            System.arraycopy(this.array, 0, dst, 0, idx_new);
+            dst[idx_new] = node.getArray()[0];
+            dst[(idx_new + 1)] = node.getArray()[1];
+            System.arraycopy(this.array, idx_new, dst, (idx_new + 2), (idx_old - idx_new));
+            System.arraycopy(this.array, (idx_old + 1), dst, (idx_old + 2), (this.array.length - 1 - idx_old));
+
+            return new BitmapIndexedNode(edit, (this.datamap | bit), (this.nodemap ^ bit), dst);
+        }
+
+        public INode without(AtomicReference<Thread> edit, int shift, int hash, Object key, Box removed_leaf) {
+            final int bit = bitpos(hash, shift);
+
+            if ((this.datamap & bit) != 0) {
+                final int idx = bitmapNodeIndex(this.datamap, bit);;
+                if (key == this.array[(2 * idx)]) {
+                    removed_leaf.val = removed_leaf;
+                    if ((Integer.bitCount(this.datamap) == 2) && (this.nodemap == 0)) {
+                        final int new_datamap = (shift == 0) ? (this.datamap ^ bit) : bitpos(hash, 0);
+                        if (idx == 0) {
+                            return new BitmapIndexedNode(edit, new_datamap, 0, new Object[] { this.array[2], this.array[3] } );
+                        } else {
+                            return new BitmapIndexedNode(edit, new_datamap, 0, new Object[] { this.array[0], this.array[1] } );
+                        }
+                    } else {
+                        return copyAndRemoveValue(edit, bit);
+                    }
+                } else {
+                    return this;
+                }
+            }
+
+            if ((this.nodemap & bit) != 0) {
+                final int node_idx = nodeAt(bit);;
+                final INode sub_node = (INode) this.array[node_idx];
+                final INode sub_node_new = sub_node.without(edit, (shift + 5), hash, key, removed_leaf);
+
+                if (sub_node != sub_node_new) {
+                    if (sub_node_new.singleKV()) {
+                        if ((this.datamap == 0) && (Integer.bitCount(this.nodemap) == 1)) {
+                            return sub_node_new;
+                        } else {
+                            return copyAndMigrateToInline(edit, bit, sub_node_new);
+                        }
+                    } else {
+                        return copyAndSet(edit, node_idx, sub_node_new);
+                    }
+                }
+            }
+
+            return this;
         }
 
         public Object find(int shift, int hash, Object key, Object not_found) {
@@ -597,6 +685,25 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
             } else {
                 return this.persistentAssoc(idx, key, val, addedLeaf);
             }
+        }
+
+        public boolean singleKV() { return (1 == this.count); }
+
+        public INode without(AtomicReference<Thread> edit, int shift, int hash, Object key, Box removed_leaf) {
+            final int idx = findIndex(key);
+            if (idx != -1) {
+                removed_leaf.val = removed_leaf;
+                switch (this.count) {
+                    case 1:
+                        return BitmapIndexedNode.EMPTY;
+                    case 2:
+                        final int hash_idx = (key == this.array[0]) ? 2 : 0;
+                        return BitmapIndexedNode.EMPTY.assoc(edit, 0, hash, this.array[hash_idx], this.array[(hash_idx + 1)], removed_leaf);
+                    default:
+                        return new HashCollisionNode(edit, hash, (this.count - 1), removePair(this.array, (idx / 2)));
+                }
+            }
+            return this;
         }
 
         public Object find(int shift, int hash, Object key, Object notFound){

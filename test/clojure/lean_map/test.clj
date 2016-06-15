@@ -2,6 +2,29 @@
   (:require [clojure.lean-map.util :as lmu]
             [clojure.test :as t]))
 
+(defn seq-iter-match
+  [^clojure.lang.Seqable seqable ^Iterable iterable]
+  (if (nil? iterable)
+    (when (not (nil? (seq seqable)))
+      (throw (ex-info "Null iterable but seq has elements"
+                      {:pos 0 :seqable seqable :iterable iterable})))
+    (let [i (.iterator iterable)]
+      (loop [s (seq seqable)
+             n 0]
+        (if (seq s)
+          (do
+            (when-not (.hasNext i)
+              (throw (ex-info "Iterator exhausted before seq"
+                              {:pos n :seqable seqable :iterable iterable})))
+            (when-not (= (.next i) (first s))
+              (throw (ex-info "Iterator and seq did not match"
+                              {:pos n :seqable seqable :iterable iterable})))
+            (recur (rest s) (inc n)))
+          (when (.hasNext i)
+            (throw (ex-info "Seq exhausted before iterator"
+                            {:pos n :seqable seqable :iterable iterable}))))))))
+
+
 (t/deftest meta-operations
   (t/is (= {:foo :bar} (-> lmu/empty (with-meta {:foo :bar}) meta)))
   (t/is (= {:foo :bar} (-> lmu/empty (with-meta {:foo :bar}) (assoc :foo :bar) meta))))
@@ -40,3 +63,7 @@
 (t/deftest kv-reduce-operations
   (t/is (= 45 (let [kvm (->> (zipmap (range 10) (range 10)) (into lmu/empty))]
                 (.kvreduce kvm (fn [sum _ v] (+ sum v)) 0)))))
+
+(t/deftest seq-and-iter-match
+  (let [kvm (->> (zipmap (range 100) (range 100)) (into lmu/empty))]
+    (t/is (= nil (try (seq-iter-match kvm kvm) (catch Exception e e))))))

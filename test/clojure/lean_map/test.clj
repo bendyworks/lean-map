@@ -1,6 +1,8 @@
 (ns clojure.lean-map.test
   (:require [clojure.lean-map.util :as lmu]
-            [clojure.test :as t]))
+            [clojure.test :as t]
+            [clojure.test.check.generators :as gen]
+            [collection-check.core :as cc]))
 
 (defn seq-iter-match
   [^clojure.lang.Seqable seqable ^Iterable iterable]
@@ -71,3 +73,15 @@
 (t/deftest seq-and-iter-match
   (let [kvm (->> (zipmap (range 100) (range 100)) (into lmu/empty))]
     (t/is (= nil (try (seq-iter-match kvm kvm) (catch Exception e e))))))
+
+(def gen-key
+  (gen/tuple gen/int))
+
+(def gen-value
+  (gen/tuple gen/int))
+
+(t/deftest assert-lean-map-core-map-like-for-lean-map
+  (cc/assert-map-like 1e3 lmu/empty gen-key gen-value lmu/empty))
+
+(t/deftest assert-lean-map-core-map-like-for-clj-map
+  (cc/assert-map-like 1e3 lmu/empty gen-key gen-value))

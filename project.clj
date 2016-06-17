@@ -21,7 +21,9 @@
                                 (inject/in
                                   [vinyasa.inject :refer [inject [in inject-in]]]
                                   [vinyasa.lein :exclude [*project*]])]}
-             :clj-test {:source-paths ["test"]}
+             :clj-test {:source-paths ["test"]
+                        :dependencies [[org.clojure/test.check "0.9.0"]
+                                       [collection-check "0.1.6"]]}
              :test {:dependencies [[collection-check "0.1.7-SNAPSHOT"]]}
              :histogram {:dependencies [[cljsjs/c3 "0.4.10-0"]]}}
 

@@ -464,7 +464,18 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
             }
         }
 
-        ITransientMap doWithout(Object key) { return null; } //TODO: Implement this
+        ITransientMap doWithout(Object key) {
+            if (root == null) return this;
+            leafFlag.val = null;
+            INode n = root.without(edit, 0, Util.hasheq(key), key, leafFlag);
+            if (n != root) {
+                this.root = n;
+            }
+            if(leafFlag.val != null) {
+                this.count--;
+            }
+            return this;
+        }
     }
 
     interface INode extends Serializable {

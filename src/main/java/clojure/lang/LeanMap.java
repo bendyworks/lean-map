@@ -584,7 +584,7 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
             if ((this.datamap & bit) != 0) {
                 final int idx = bitmapNodeIndex(this.datamap, bit);
                 final Object current_key = this.array[(2 * idx)];
-                if (Util.equals(key, current_key)) {
+                if (Util.equiv(key, current_key)) {
                     return copyAndSet(edit, ((2 * idx) + 1), val);
                 } else {
                     final Object current_val = this.array[((2 * idx) + 1)];
@@ -648,7 +648,7 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
             if ((this.datamap & bit) != 0) {
                 final int idx = bitmapNodeIndex(this.datamap, bit);;
-                if (key == this.array[(2 * idx)]) {
+                if (Util.equiv(key, this.array[(2 * idx)])) {
                     removed_leaf.val = removed_leaf;
                     if ((Integer.bitCount(this.datamap) == 2) && (this.nodemap == 0)) {
                         final int new_datamap = (shift == 0) ? (this.datamap ^ bit) : bitpos(hash, 0);
@@ -852,7 +852,7 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
                     case 1:
                         return BitmapIndexedNode.EMPTY;
                     case 2:
-                        final int hash_idx = (key == this.array[0]) ? 2 : 0;
+                        final int hash_idx = (Util.equiv(key, this.array[0])) ? 2 : 0;
                         return BitmapIndexedNode.EMPTY.assoc(edit, 0, hash, this.array[hash_idx], this.array[(hash_idx + 1)], removed_leaf);
                     default:
                         return new HashCollisionNode(edit, hash, (this.count - 1), removePair(this.array, (idx / 2)));

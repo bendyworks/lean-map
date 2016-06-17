@@ -4,6 +4,7 @@ import java.util.Iterator;
 
 import java.util.*;
 import java.io.Serializable;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class LeanMap extends APersistentMap implements IEditableCollection, IObj, IMapIterable, IKVReduce {
@@ -155,6 +156,17 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
     public Iterator valIterator(){
         return iterator(APersistentMap.MAKE_VAL);
+    }
+
+    public Object fold(long n, final IFn combinef, final IFn reducef,
+                       IFn fjinvoke, final IFn fjtask, final IFn fjfork, final IFn fjjoin){
+        //we are ignoring n for now
+        Callable top = new Callable(){
+            public Object call() throws Exception{
+                return root == null ? combinef.invoke() : combinef.invoke(combinef.invoke(), root.fold(combinef, reducef, fjtask, fjfork, fjjoin));
+            }
+        };
+        return fjinvoke.invoke(top);
     }
 
     public IPersistentMap without(Object key){
@@ -480,6 +492,8 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
         int dataArity();
 
+        Object fold(IFn combinef, IFn reducef, IFn fjtask, IFn fjfork, IFn fjjoin);
+
         public Object kvreduce(IFn f, Object init);
     }
 
@@ -735,6 +749,10 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
             }
         }
 
+        public Object fold(IFn combinef, IFn reducef, IFn fjtask, IFn fjfork, IFn fjjoin){
+            return NodeSeq.kvreduce(this.array, Integer.bitCount(this.datamap), Integer.bitCount(this.nodemap), reducef, combinef.invoke());
+        }
+
         public Object kvreduce(IFn f, Object init) {
             return NodeSeq.kvreduce(this.array, Integer.bitCount(this.datamap), Integer.bitCount(this.nodemap), f, init);
         }
@@ -880,6 +898,10 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
 
         public NodeSeq nodeSeq() {
             throw new UnsupportedOperationException();
+        }
+
+        public Object fold(IFn combinef, IFn reducef, IFn fjtask, IFn fjfork, IFn fjjoin){
+            return NodeSeq.kvreduce(this.array, this.count, 0, reducef, combinef.invoke());
         }
 
         public Object kvreduce(IFn f, Object init) {

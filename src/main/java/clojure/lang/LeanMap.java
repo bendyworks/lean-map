@@ -6,7 +6,7 @@ import java.util.*;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class LeanMap extends APersistentMap implements IEditableCollection, IObj, IKVReduce {
+public class LeanMap extends APersistentMap implements IEditableCollection, IObj, IMapIterable, IKVReduce {
 
     final int count;
     final INode root;
@@ -127,9 +127,35 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
         return (root != null) ? root.find(0, Util.hasheq(key), key) : null;
     }
 
-    public Iterator iterator() { return null; } //TODO: Implement
+    static final Iterator EMPTY_ITER = new Iterator(){
+        public boolean hasNext(){
+            return false;
+        }
 
-    public Iterator iterator(IFn f) {return null; } //TODO: Implement
+        public Object next(){
+            throw new NoSuchElementException();
+        }
+
+        public void remove(){
+            throw new UnsupportedOperationException();
+        }
+    };
+
+    private Iterator iterator(final IFn f) {
+        return (root == null) ? EMPTY_ITER : new NodeIter(root, f);
+    }
+
+    public Iterator iterator(){
+        return iterator(APersistentMap.MAKE_ENTRY);
+    }
+
+    public Iterator keyIterator(){
+        return iterator(APersistentMap.MAKE_KEY);
+    }
+
+    public Iterator valIterator(){
+        return iterator(APersistentMap.MAKE_VAL);
+    }
 
     public IPersistentMap without(Object key){
         if(this.root == null) {
@@ -238,6 +264,106 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
                 }
             }
             return init;
+        }
+    }
+
+    static final class NodeIter implements Iterator {
+        private static final Object NULL = new Object();
+        private Object next_entry = NULL;
+
+        final INode[] nodes = new INode[7];
+        final int[] cursor_lengths = new int[7];
+        final IFn f;
+
+        Object[] array;
+        int lvl = 0;
+        int data_idx;
+        int data_len;
+
+        NodeIter(INode node, IFn f) {
+            this.f = f;
+
+            this.array = node.getArray();
+            this.lvl = 0;
+            this.data_idx = 0;
+
+            this.data_len = node.dataArity();
+            this.nodes[0] = node;
+            this.cursor_lengths[0] = node.nodeArity();
+
+            if (this.data_len == 0) {
+                advance();
+            } else {
+                this.data_len = this.data_len - 1;
+            }
+
+            this.next_entry = this.f.invoke(array[(this.data_idx * 2)], array[((this.data_idx * 2) + 1)]);
+        }
+
+        private boolean advance() {
+            if (this.data_idx < this.data_len) {
+                this.data_idx = this.data_idx + 1;
+                this.next_entry = this.f.invoke(array[(this.data_idx * 2)], array[((this.data_idx * 2) + 1)]);
+
+                return true;
+            } else {
+                while (this.lvl >= 0) {
+                    int node_idx = this.cursor_lengths[this.lvl];
+                    if (node_idx == 0) {
+                        this.lvl = this.lvl - 1;
+                    } else {
+                        this.cursor_lengths[this.lvl] = (node_idx - 1);
+
+                        INode node = this.nodes[this.lvl].getNode(node_idx);
+                        boolean has_nodes = node.hasNodes();
+                        int new_lvl = has_nodes ? (this.lvl + 1) : this.lvl;
+
+                        if (has_nodes) {
+                            this.nodes[new_lvl] = node;
+                            this.cursor_lengths[new_lvl] = node.nodeArity();
+                        }
+
+                        if (node.hasData()) {
+                            this.array = node.getArray();
+                            this.lvl = new_lvl;
+                            this.data_idx = 0;
+                            this.data_len = (node.dataArity() - 1);
+                            this.next_entry = this.f.invoke(array[(this.data_idx * 2)], array[((this.data_idx * 2) + 1)]);
+
+                            return true;
+                        }
+
+                        lvl = lvl + 1;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public boolean hasNext() {
+            if (this.next_entry != NULL) {
+                return true;
+            }
+
+            return advance();
+        }
+
+        public Object next(){
+            Object ret = this.next_entry;
+            if(ret != NULL)
+            {
+                this.next_entry = NULL;
+                return ret;
+            }
+            else if(advance()) {
+                return next();
+            }
+            throw new NoSuchElementException();
+        }
+
+        public void remove(){
+            throw new UnsupportedOperationException();
         }
     }
 

@@ -64,6 +64,10 @@
   (t/is (= 45 (let [kvm (->> (zipmap (range 10) (range 10)) (into lmu/empty))]
                 (.kvreduce kvm (fn [sum _ v] (+ sum v)) 0)))))
 
+(t/deftest reduce-operations
+  (t/is (= 45 (let [kvm (->> (zipmap (range 10) (range 10)) (into lmu/empty))]
+                (reduce (fn [sum [_ v]] (+ sum v)) 0 kvm)))))
+
 (t/deftest seq-and-iter-match
   (let [kvm (->> (zipmap (range 100) (range 100)) (into lmu/empty))]
     (t/is (= nil (try (seq-iter-match kvm kvm) (catch Exception e e))))))

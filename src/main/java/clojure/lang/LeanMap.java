@@ -143,7 +143,7 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
     };
 
     private Iterator iterator(final IFn f) {
-        return (root == null) ? EMPTY_ITER : new NodeIter(root, f);
+        return ((root == null) || (this.count == 0)) ? EMPTY_ITER : new NodeIter(root, f);
     }
 
     public Iterator iterator(){

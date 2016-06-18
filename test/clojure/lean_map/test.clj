@@ -81,8 +81,19 @@
   (let [kvm (->> (zipmap (range 100) (range 100)) (into lmu/empty))]
     (t/is (= nil (try (seq-iter-match kvm kvm) (catch Exception e e))))))
 
+(deftype BadHashNumber [num]
+  Object
+  (toString [_]
+    (str "BadHashNumber. " num))
+  clojure.lang.IHashEq
+  (hasheq [_]
+    1))
+
+(def gen-bad-hash
+  (gen/fmap (partial apply ->BadHashNumber) (gen/tuple gen/int)))
+
 (def gen-key
-  (gen/tuple gen/int))
+  (gen/tuple (gen/frequency [[9 gen/int] [1 gen-bad-hash]])))
 
 (def gen-value
   (gen/tuple gen/int))

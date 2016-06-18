@@ -418,7 +418,7 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
         return new TransientLeanMap(this);
     }
 
-    static final class TransientLeanMap extends ATransientMap {
+    static final class TransientLeanMap extends AFn implements ITransientMap {
         final AtomicReference<Thread> edit;
         volatile INode root;
         volatile int count;
@@ -432,6 +432,68 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
             this.edit = edit;
             this.root = root;
             this.count = count;
+        }
+        //ATransientMap Inlining
+        public ITransientMap conj(Object o) {
+            ensureEditable();
+            if(o instanceof Map.Entry)
+            {
+                Map.Entry e = (Map.Entry) o;
+
+                return assoc(e.getKey(), e.getValue());
+            }
+            else if(o instanceof IPersistentVector)
+            {
+                IPersistentVector v = (IPersistentVector) o;
+                if(v.count() != 2)
+                    throw new IllegalArgumentException("Vector arg to map conj must be a pair");
+                return assoc(v.nth(0), v.nth(1));
+            }
+
+            ITransientMap ret = this;
+            for(ISeq es = RT.seq(o); es != null; es = es.next())
+            {
+                Map.Entry e = (Map.Entry) es.first();
+                ret = ret.assoc(e.getKey(), e.getValue());
+            }
+            return ret;
+        }
+
+        public final Object invoke(Object arg1) {
+            return valAt(arg1);
+        }
+
+        public final Object invoke(Object arg1, Object notFound) {
+            return valAt(arg1, notFound);
+        }
+
+        public final Object valAt(Object key) {
+            return valAt(key, null);
+        }
+
+        public final ITransientMap assoc(Object key, Object val) {
+            ensureEditable();
+            return doAssoc(key, val);
+        }
+
+        public final ITransientMap without(Object key) {
+            ensureEditable();
+            return doWithout(key);
+        }
+
+        public final IPersistentMap persistent() {
+            ensureEditable();
+            return doPersistent();
+        }
+
+        public final Object valAt(Object key, Object notFound) {
+            ensureEditable();
+            return doValAt(key, notFound);
+        }
+
+        public final int count() {
+            ensureEditable();
+            return doCount();
         }
 
         ITransientMap doAssoc(Object key, Object val) {

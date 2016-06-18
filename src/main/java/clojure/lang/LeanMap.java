@@ -191,19 +191,21 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
                 if (node_idx == 0) {
                     lvl = lvl - 1;
                 } else {
-                    cursor_lengths[lvl] = (node_idx - 1);
+                    final int[] cursors = cursor_lengths.clone();
+                    cursors[lvl] = (node_idx - 1);
 
                     INode node = nodes[lvl].getNode(node_idx);
                     boolean has_nodes = node.hasNodes();
                     int new_lvl = has_nodes ? (lvl + 1) : lvl;
 
+                    final INode[] new_nodes = nodes.clone();
                     if (has_nodes) {
-                        nodes[new_lvl] = node;
-                        cursor_lengths[new_lvl] = node.nodeArity();
+                        new_nodes[new_lvl] = node;
+                        cursors[new_lvl] = node.nodeArity();
                     }
 
                     if (node.hasData()){
-                        return new NodeSeq(null, node.getArray(), new_lvl, nodes, cursor_lengths, 0, (node.dataArity() - 1));
+                        return new NodeSeq(null, node.getArray(), new_lvl, new_nodes, cursors, 0, (node.dataArity() - 1));
                     }
 
                     lvl = lvl + 1;

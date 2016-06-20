@@ -1,6 +1,27 @@
-package clojure.lang;
+package com.bendyworks;
 
 import java.util.Iterator;
+
+import clojure.lang.AFn;
+import clojure.lang.APersistentMap;
+import clojure.lang.ASeq;
+import clojure.lang.Box;
+import clojure.lang.IDeref;
+import clojure.lang.IEditableCollection;
+import clojure.lang.IFn;
+import clojure.lang.IKVReduce;
+import clojure.lang.IMapEntry;
+import clojure.lang.IMapIterable;
+import clojure.lang.IObj;
+import clojure.lang.IPersistentCollection;
+import clojure.lang.IPersistentMap;
+import clojure.lang.IPersistentVector;
+import clojure.lang.ISeq;
+import clojure.lang.ITransientMap;
+import clojure.lang.MapEntry;
+import clojure.lang.Obj;
+import clojure.lang.RT;
+import clojure.lang.Util;
 
 import java.util.*;
 import java.io.Serializable;
@@ -145,6 +166,24 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
     private Iterator iterator(final IFn f) {
         return ((root == null) || (this.count == 0)) ? EMPTY_ITER : new NodeIter(root, f);
     }
+
+    static final IFn MAKE_ENTRY = new AFn() {
+        public Object invoke(Object key, Object val) {
+            return MapEntry.create(key, val);
+        }
+    };
+
+    static final IFn MAKE_KEY = new AFn() {
+        public Object invoke(Object key, Object val) {
+            return key;
+        }
+    };
+
+    static final IFn MAKE_VAL = new AFn() {
+        public Object invoke(Object key, Object val) {
+            return val;
+        }
+    };
 
     public Iterator iterator(){
         return iterator(MAKE_ENTRY);

@@ -147,15 +147,15 @@ public class LeanMap extends APersistentMap implements IEditableCollection, IObj
     }
 
     public Iterator iterator(){
-        return iterator(APersistentMap.MAKE_ENTRY);
+        return iterator(MAKE_ENTRY);
     }
 
     public Iterator keyIterator(){
-        return iterator(APersistentMap.MAKE_KEY);
+        return iterator(MAKE_KEY);
     }
 
     public Iterator valIterator(){
-        return iterator(APersistentMap.MAKE_VAL);
+        return iterator(MAKE_VAL);
     }
 
     public Object fold(long n, final IFn combinef, final IFn reducef,

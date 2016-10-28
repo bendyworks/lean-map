@@ -120,12 +120,6 @@ Lean HAMT's are implemented in the `cljs.lean-map.core` namespace. User function
 
 ### Testing
 
-Currently testing is done via a collection check port to ClojureScript that will take some time to be officially released. In the meantime here's how you setup the dependencies
-
-  1. git clone https://github.com/martinklepsch/collection-check-1.git
-  2. cd collection-check-1; boot build-jar
-  3. You should now be able to use [collection-check "0.1.7-SNAPSHOT”]
-
 To test on node use `script/node-test.sh`. For phantomjs use `script/phantom-test`. If you want to run tests with a custom engine use:
 
 `lein with-profile test doo <js environment> <name of test build e.g. "test">`

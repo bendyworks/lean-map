@@ -2,7 +2,7 @@
   (:require [clojure.lean-map.util :as lmu]
             [clojure.test :as t]
             [clojure.test.check.generators :as gen]
-            [collection-check.core :as cc]))
+            [collection-check :as cc]))
 
 (defn seq-iter-match
   [^clojure.lang.Seqable seqable ^Iterable iterable]
@@ -99,7 +99,7 @@
   (gen/tuple gen/int))
 
 (t/deftest assert-lean-map-core-map-like-for-lean-map
-  (cc/assert-map-like 1e3 lmu/empty gen-key gen-value lmu/empty))
+  (cc/assert-map-like 1e3 lmu/empty gen-key gen-value {:base lmu/empty}))
 
 (t/deftest assert-lean-map-core-map-like-for-clj-map
-  (cc/assert-map-like 1e3 lmu/empty gen-key gen-value))
+  (cc/assert-map-like 1e3 lmu/empty gen-key gen-value {:base (hash-map)}))
